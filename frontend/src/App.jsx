@@ -8,7 +8,7 @@ import Step2_ReviewPanel  from './components/Step2_ReviewPanel';
 import Step3_PublishPanel from './components/Step3_PublishPanel';
 import PlaceholderView    from './components/PlaceholderView';
 
-import { transformMessage, publishMessage } from './services/api';
+import { transformMessage, publishMessage, publishToTeams } from './services/api';
 
 const STEP_LABELS = {
   1: 'Input Your Message',
@@ -88,11 +88,16 @@ export default function App() {
     setCurrentStep(3);
   }
 
-  async function handlePublish(selectedChannel, scheduledAt) {
+  async function handlePublish(selectedChannel, scheduledAt, teamsWebhookUrl) {
     setError(null);
     setIsLoading(true);
     try {
-      const result = await publishMessage(transformedMessage, selectedChannel, audience, scheduledAt);
+      let result;
+      if (selectedChannel === 'Microsoft Teams') {
+        result = await publishToTeams(transformedMessage, selectedChannel, audience, scheduledAt, teamsWebhookUrl);
+      } else {
+        result = await publishMessage(transformedMessage, selectedChannel, audience, scheduledAt);
+      }
       if (result.success) {
         setPublishResult(result);
         setPublishStatus('success');
@@ -100,8 +105,8 @@ export default function App() {
         setError(result.error || 'Publish failed. Please try again.');
         setPublishStatus('error');
       }
-    } catch {
-      setError('Could not reach the backend. Is it running on http://localhost:3001?');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Could not reach the backend. Is it running on http://localhost:3001?');
       setPublishStatus('error');
     } finally {
       setIsLoading(false);

@@ -24,6 +24,26 @@ export const publishMessage = async (transformedMessage, channel, audience, sche
   return response.data;
 };
 
+/**
+ * Publish a transformed message to a Microsoft Teams channel via Incoming Webhook.
+ * @param {object}  transformedMessage - The 4-section message object
+ * @param {string}  channel            - Display name (default 'Microsoft Teams')
+ * @param {string}  audience           - Audience key
+ * @param {string}  [scheduledAt]      - ISO timestamp for scheduled publish
+ * @param {string}  webhookUrl         - Teams Incoming Webhook URL
+ * @returns {{ success, channel, audience, publishedAt }}
+ */
+export const publishToTeams = async (transformedMessage, channel, audience, scheduledAt, webhookUrl) => {
+  const response = await api.post('/teams/publish', {
+    transformedMessage,
+    channel,
+    audience,
+    scheduledAt,
+    webhookUrl,
+  });
+  return response.data;
+};
+
 // ── Legacy / other endpoints ────────────────────────────────────────
 
 export const simplifyText = async (text, audience, language, tone) => {

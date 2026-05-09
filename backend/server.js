@@ -6,6 +6,7 @@
  *   POST /transform          → AI-transform raw message → 4-section output
  *   POST /publish            → Save published message, return success meta
  *   POST /simplify           → Legacy: plain-text simplification
+ *   POST /teams/publish      → Publish to Microsoft Teams via Incoming Webhook (Adaptive Card)
  *   POST /slack/publish      → Legacy: publish to Slack webhook
  *   GET  /messages           → Message history
  *   GET  /templates          → Saved templates
@@ -192,6 +193,87 @@ app.post('/simplify', async (req, res) => {
   } catch (err) {
     console.error('[/simplify]', err.message);
     return res.status(500).json({ error: err.message });
+  }
+});
+
+// Microsoft Teams: publish via Incoming Webhook
+app.post('/teams/publish', async (req, res) => {
+  const {
+    transformedMessage,
+    channel = 'Microsoft Teams',
+    audience = 'frontline',
+    scheduledAt,
+    webhookUrl,
+  } = req.body;
+
+  const url = webhookUrl || process.env.TEAMS_WEBHOOK_URL;
+  if (!url) {
+    return res.status(400).json({ success: false, error: 'No Teams webhook URL provided. Pass webhookUrl in the request body or set TEAMS_WEBHOOK_URL in the environment.' });
+  }
+  if (!transformedMessage) {
+    return res.status(400).json({ success: false, error: 'transformedMessage is required' });
+  }
+
+  // Build Adaptive Card body
+  const cardBody = [
+    { key: 'what_is_happening',     label: '📢 What Is Happening'     },
+    { key: 'what_it_means_for_you', label: '👤 What It Means for You' },
+    { key: 'what_you_need_to_do',   label: '✅ What You Need to Do'    },
+    { key: 'help',                  label: '💬 Need Help?'             },
+  ].flatMap(({ key, label }) => [
+    {
+      type: 'TextBlock',
+      text: label,
+      weight: 'Bolder',
+      size: 'Medium',
+      wrap: true,
+      spacing: 'Medium',
+    },
+    {
+      type: 'TextBlock',
+      text: transformedMessage[key] || '',
+      wrap: true,
+      spacing: 'None',
+    },
+  ]);
+
+  const adaptiveCard = {
+    type: 'message',
+    attachments: [
+      {
+        contentType: 'application/vnd.microsoft.card.adaptive',
+        content: {
+          $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+          type: 'AdaptiveCard',
+          version: '1.4',
+          body: cardBody,
+        },
+      },
+    ],
+  };
+
+  try {
+    const teamsRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adaptiveCard),
+    });
+
+    if (!teamsRes.ok) {
+      const errText = await teamsRes.text();
+      throw new Error(`Teams webhook returned ${teamsRes.status}: ${errText}`);
+    }
+
+    const publishedAt = scheduledAt || new Date().toISOString();
+    db.prepare(
+      'INSERT INTO messages (original_text, simplified_text, audience, status, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run('', JSON.stringify(transformedMessage), audience, 'Published', publishedAt);
+    db.prepare('UPDATE analytics SET messages_published = messages_published + 1').run();
+
+    return res.json({ success: true, channel, audience, publishedAt });
+  } catch (err) {
+    console.error('[/teams/publish]', err.message);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

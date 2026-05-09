@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import SuccessBanner from './SuccessBanner';
+import { publishToTeams } from '../services/api';
 
 const CHANNELS = [
   { value: 'Viva Engage',     icon: '🔥', skin: 'viva'  },
@@ -49,10 +50,11 @@ export default function Step3_PublishPanel({
   onBack,
   onReset
 }) {
-  const [channel, setChannel]         = useState(defaultChannel || 'Viva Engage');
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('');
-  const [previewCopied, setPreviewCopied] = useState(false);
+  const [channel, setChannel]               = useState(defaultChannel || 'Viva Engage');
+  const [scheduleDate, setScheduleDate]     = useState('');
+  const [scheduleTime, setScheduleTime]     = useState('');
+  const [previewCopied, setPreviewCopied]   = useState(false);
+  const [teamsWebhookUrl, setTeamsWebhookUrl] = useState('');
 
   const skin = CHANNEL_SKIN[channel] || 'viva';
   const charLimit = CHANNEL_LIMITS[channel] || 4096;
@@ -69,7 +71,7 @@ export default function Step3_PublishPanel({
     if (scheduleDate && scheduleTime) {
       scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
     }
-    onPublish(channel, scheduledAt);
+    onPublish(channel, scheduledAt, teamsWebhookUrl || undefined);
   }
 
   function handleCopyPreview() {
@@ -149,6 +151,39 @@ export default function Step3_PublishPanel({
           {overLimit && ' · ⚠️ Exceeds channel limit'}
         </div>
       </div>
+
+      {/* Teams Incoming Webhook URL — shown only when Microsoft Teams is selected */}
+      {channel === 'Microsoft Teams' && (
+        <div style={{ marginTop: 24 }}>
+          <p className="section-title">
+            💬 Teams Incoming Webhook URL
+            <span style={{ fontWeight: 400, fontSize: '0.8em', marginLeft: 8, opacity: 0.7 }}>
+              — required to post to Teams
+            </span>
+          </p>
+          <input
+            type="url"
+            className="teams-webhook-input"
+            style={{ width: '100%', boxSizing: 'border-box' }}
+            placeholder="https://your-org.webhook.office.com/webhookb2/…"
+            value={teamsWebhookUrl}
+            onChange={e => setTeamsWebhookUrl(e.target.value)}
+            disabled={isLoading}
+            aria-label="Teams Incoming Webhook URL"
+            spellCheck={false}
+          />
+          <p className="schedule-hint">
+            <a
+              href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              How to create a Teams Incoming Webhook ↗
+            </a>
+            {' '}· Or set <code>TEAMS_WEBHOOK_URL</code> in the backend <code>.env</code> to skip this field.
+          </p>
+        </div>
+      )}
 
       {/* Schedule picker */}
       <p className="section-title" style={{ marginTop: 24 }}>Schedule (optional)</p>
