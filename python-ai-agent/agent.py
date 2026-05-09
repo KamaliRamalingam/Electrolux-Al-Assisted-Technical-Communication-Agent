@@ -199,11 +199,6 @@ async def find_github_pull_request_for_branch(owner: str, repo: str, branch: str
     result = await mcp_session.call_tool("find_github_pull_request_for_branch", arguments={"owner": owner, "repo": repo, "branch": branch})
     return result.content[0].text
 
-tools = [detect_audience, simplify_text, validate_accuracy,
-         get_github_repo, get_github_readme, get_github_commits, get_github_commit_detail,
-         get_github_pull_request, get_github_pr_files, get_github_issue, get_github_issue_comments,
-         get_github_open_issues, find_github_pull_request_for_branch]
-=======
 @tool
 async def list_enterprise_docs() -> str:
     """List all available enterprise project documentation files to find relevant context."""
@@ -220,8 +215,12 @@ async def read_enterprise_doc(filename: str) -> str:
     result = await mcp_session.call_tool("read_enterprise_doc", arguments={"filename": filename})
     return result.content[0].text
 
-tools = [detect_audience, simplify_text, validate_accuracy, list_enterprise_docs, read_enterprise_doc]
-main
+tools = [
+    detect_audience, simplify_text, validate_accuracy, list_enterprise_docs, read_enterprise_doc,
+    get_github_repo, get_github_readme, get_github_commits, get_github_commit_detail,
+    get_github_pull_request, get_github_pr_files, get_github_issue, get_github_issue_comments,
+    get_github_open_issues, find_github_pull_request_for_branch
+]
 
 # Build the LangGraph ReAct Agent
 llm = ChatOpenAI(
@@ -327,7 +326,7 @@ def send_to_slack_updates(message: str):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*📢 Simplified Update*\n{message}"
+                    "text": message
                 }
             }
         ]
@@ -353,7 +352,7 @@ async def simplify_endpoint(req: SimplifyRequest):
 @app.post("/slack/publish")
 async def publish_endpoint(req: PublishRequest):
     """Frontend-triggered: publish simplified message to the #updates Slack channel."""
-    send_to_slack_updates(req.message)
+    send_to_slack_updates(f"*📢 New Internal Communication*\n\n{req.message}")
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE analytics SET messages_published = messages_published + 1")
@@ -610,13 +609,14 @@ async def _process_github_push(owner: str, repo_name: str, branch: str,
         })
 
         simplified = result["messages"][-1].content
-        send_to_slack_updates(f"*GitHub Update — {owner}/{repo_name}*\n{simplified}")
+        send_to_slack_updates(f"*📢 New GitHub Push Simplified*\n*Repository:* {owner}/{repo_name}\n\n{simplified}")
         print(f"[Agent] GitHub push update posted to Slack for {owner}/{repo_name}")
 
     except Exception as e:
         print(f"[Agent] Error processing GitHub push: {e}")
         send_to_slack_updates(
-            f"*GitHub Update — {owner}/{repo_name}*\n"
+            f"*📢 New GitHub Push*\n"
+            f"*Repository:* {owner}/{repo_name}\n"
             f"New code was pushed to the {branch} branch by {pusher}.\n"
             f"Commits: {', '.join(commit_messages)}"
         )

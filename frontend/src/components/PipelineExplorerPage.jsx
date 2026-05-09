@@ -13,16 +13,18 @@ const pipelines = {
       { id: '2', data: { label: 'FastAPI Backend' }, position: { x: 250, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
       { id: '3', data: { label: 'LangGraph Agent (Brain)' }, position: { x: 475, y: 150 }, style: { background: '#3b0764', color: '#d8b4fe', border: '1px solid #a855f7', borderRadius: '8px' } },
       { id: '4', data: { label: 'MCP Server (Tools)' }, position: { x: 475, y: 300 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
-      { id: '5', data: { label: 'Doc Search / Read' }, position: { x: 225, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '5', data: { label: 'Enterprise Docs' }, position: { x: 275, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
       { id: '6', data: { label: 'Simplify Tool' }, position: { x: 475, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
-      { id: '7', data: { label: 'Validate Tool' }, position: { x: 725, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '7', data: { label: 'Validate Tool' }, position: { x: 675, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '9', data: { label: 'GitHub Tools' }, position: { x: 75, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
       { id: '8', type: 'output', data: { label: 'Enterprise Hub / Slack' }, position: { x: 800, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
     ],
     edges: [
       { id: 'e1-2', source: '1', target: '2', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e2-3', source: '2', target: '3', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e3-4', source: '3', target: '4', animated: true, style: { stroke: '#a855f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
-      { id: 'e4-5', source: '4', target: '5', animated: true, label: 'Retrieve Context', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-9', source: '4', target: '9', animated: true, label: 'Fetch Git Context', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-5', source: '4', target: '5', animated: true, label: 'Retrieve Docs', markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e4-6', source: '4', target: '6', animated: true, label: 'Process', markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e4-7', source: '4', target: '7', animated: true, label: 'Validate', markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e3-8', source: '3', target: '8', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
@@ -79,6 +81,24 @@ const pipelines = {
       { id: 'e3-4', source: '3', target: '4', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e4-5', source: '4', target: '5', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e5-6', source: '5', target: '6', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+    ]
+  },
+  github: {
+    name: 'GitHub-to-Slack Automation',
+    description: 'When a developer pushes code, a GitHub webhook triggers the AI agent. The agent uses MCP GitHub tools to gather commit, issue, and PR context, simplifies it for non-technical users, and publishes to Slack.',
+    nodes: [
+      { id: '1', type: 'input', data: { label: 'GitHub Webhook (Push)' }, position: { x: 50, y: 150 }, style: { background: '#24292e', color: '#ffffff', border: '1px solid #1b1f23', borderRadius: '8px', padding: '10px' } },
+      { id: '2', data: { label: 'FastAPI /github/webhook' }, position: { x: 300, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
+      { id: '3', data: { label: 'LangGraph Agent' }, position: { x: 600, y: 150 }, style: { background: '#3b0764', color: '#d8b4fe', border: '1px solid #a855f7', borderRadius: '8px' } },
+      { id: '4', data: { label: 'MCP GitHub Tools (Context)' }, position: { x: 600, y: 300 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
+      { id: '5', type: 'output', data: { label: 'Slack #updates' }, position: { x: 900, y: 150 }, style: { background: '#4A154B', color: '#ffffff', border: '1px solid #E01E5A', borderRadius: '8px' } },
+    ],
+    edges: [
+      { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Push Event Payload', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e2-3', source: '2', target: '3', animated: true, label: 'Trigger AI', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e3-4', source: '3', target: '4', animated: true, label: 'Fetch PRs & Issues', style: { stroke: '#a855f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-3', source: '4', target: '3', animated: true, label: 'Rich Context', style: { stroke: '#10b981' }, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e3-5', source: '3', target: '5', animated: true, label: 'Simplified Post', style: { stroke: '#38bdf8' }, markerEnd: { type: MarkerType.ArrowClosed } },
     ]
   }
 };
