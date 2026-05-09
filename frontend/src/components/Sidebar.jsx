@@ -78,6 +78,7 @@ const NAV_GROUPS = [
   {
     label: 'Workspace',
     items: [
+      { key: 'dashboard', icon: '🏠', label: 'Dashboard',         badge: null },
       { key: 'new',       icon: '✨', label: 'New Communication', badge: null },
       { key: 'history',   icon: '📋', label: 'History',           badge: null },
       { key: 'templates', icon: '📄', label: 'Templates',         badge: '3'  },
@@ -94,7 +95,9 @@ const NAV_GROUPS = [
   {
     label: 'Admin',
     items: [
-      { key: 'settings', icon: '⚙️', label: 'Settings', badge: null },
+      { key: 'settings',   icon: '⚙️', label: 'Settings',   badge: null },
+      { key: 'analytics',  icon: '📊', label: 'Analytics',  badge: null },
+      { key: 'audit-logs', icon: '🔒', label: 'Audit Logs', badge: null },
     ]
   }
 ];

@@ -1232,61 +1232,1200 @@ Focus on transforming the application into a modern enterprise communication pla
 
 ---
 
-## Phase 2 — Core Product Features
-Enhance communication creation with personalization, localization, and intelligent editing capabilities.
+# AI Communication Agent — Screen-by-Screen README Specification
 
-### Planned Enhancements
-- Audience-aware message generation
-- Multi-language communication support
-- Channel-based character limit management
-- AI tone customization
-- Edit & regenerate workflow
-- Advanced destination/channel selection
+This document provides implementation-ready screen specifications for every major UI screen in the AI Communication Agent platform.
+
+The goal of this document is to help GitHub Copilot, Cline, Cursor, or other AI coding assistants generate production-quality React frontend screens consistently.
 
 ---
 
-## Phase 3 — Enterprise AI
-Introduce enterprise-grade AI intelligence, governance, and explainability features.
+# Global Product Context
 
-### Planned Enhancements
-- Retrieval-Augmented Generation (RAG)
-- AI governance & sensitive data masking
-- AI confidence and compliance indicators
-- AI explainability insights
-- Enterprise terminology alignment
-- Smart transformation intelligence
+## Product Name
+AI Communication Agent
+
+## Product Purpose
+An enterprise AI-powered communication platform that transforms raw technical IT updates into clear, audience-friendly employee communications.
 
 ---
 
-## Phase 4 — Integrations & Workflow
-Expand enterprise workflow automation and communication channel integrations.
+# Global Design System
 
-### Planned Enhancements
-- Microsoft Teams integration
+## Design Style
+Modern enterprise SaaS dashboard.
+
+### Visual Characteristics
+- Clean whitespace
+- Microsoft Fluent + Linear style inspiration
+- Dark enterprise sidebar
+- Rounded cards
+- Subtle shadows
+- Soft gray backgrounds
+- Blue primary actions
+- Semantic status colors
+- Responsive desktop-first layout
+
+---
+
+# Global Layout Structure
+
+Every screen uses the same application shell.
+
+## App Shell Layout
+
+```txt
+┌─────────────────────────────────────────────────────────────┐
+│ Sidebar │ Main Content Area                               │
+│         │                                                  │
+│         │                                                  │
+│         │                                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# Sidebar Navigation
+
+## Purpose
+Primary enterprise navigation.
+
+## Width
+- Expanded: 240px
+- Collapsed: 72px
+
+## Background
+Dark navy gradient.
+
+## Sidebar Sections
+
+### Header
+- Product logo
+- Product name
+- Environment badge
+
+### Workspace
+- New Communication
+- History
+- Templates
+
+### Channels
+- Viva Engage
+- Microsoft Teams
+- Slack
+
+### Admin
+- Settings
+- Audit Logs
+- Analytics
+
+---
+
+# Shared Components
+
+## Components Used Across Screens
+
+| Component | Purpose |
+|---|---|
+| Sidebar | Navigation |
+| HeaderBar | Page header |
+| Stepper | Workflow progress |
+| SectionCard | Message sections |
+| StatusBadge | Status display |
+| AIInsightCard | AI explanations |
+| PublishPreview | Final preview |
+| ChannelBadge | Channel indicator |
+| AnalyticsCard | Metrics |
+| ComplianceBadge | Governance indicators |
+
+---
+
+# Screen 1 — Dashboard
+
+## Screen Name
+Dashboard
+
+## Route
+```txt
+/dashboard
+```
+
+---
+
+## Screen Purpose
+Provide enterprise overview of communication activity.
+
+This is the landing screen after login.
+
+---
+
+# Dashboard Layout
+
+## Top Header
+
+### Left Side
+- Page title: “Dashboard”
+- Subtitle:
+  “Monitor communication operations and AI-assisted publishing.”
+
+### Right Side
+- New Communication button
+- Notification icon
+- User profile menu
+
+---
+
+# Dashboard Sections
+
+## Section 1 — KPI Cards
+
+### Purpose
+Show operational metrics.
+
+### Cards
+
+#### Total Messages
+- Total communications generated
+- Trend indicator
+
+#### Published
+- Successfully published communications
+- Trend percentage
+
+#### Scheduled
+- Future scheduled communications
+
+#### Drafts
+- Saved drafts
+
+---
+
+## Section 2 — Recent Communications Table
+
+### Columns
+| Column | Description |
+|---|---|
+| Title | Communication title |
+| Audience | Target audience |
+| Channel | Publish channel |
+| Status | Draft / Scheduled / Published |
+| Updated | Last updated timestamp |
+
+### Features
+- Sorting
+- Search
+- Status filtering
+- Pagination
+
+---
+
+## Section 3 — AI Activity Feed
+
+### Purpose
+Show latest AI transformations.
+
+### Feed Item Fields
+- Message title
+- Audience
+- Confidence score
+- AI transformation summary
+- Timestamp
+
+---
+
+## Section 4 — Communication Performance
+
+### Charts
+- Engagement trends
+- Channel usage
+- Message open rate
+- Read completion rate
+
+---
+
+# Dashboard Technical Requirements
+
+## API Requirements
+
+### GET /api/dashboard
+
+Returns:
+
+```json
+{
+  "metrics": {},
+  "recentCommunications": [],
+  "activityFeed": [],
+  "analytics": {}
+}
+```
+
+---
+
+# Dashboard Components
+
+```txt
+DashboardPage
+├── HeaderBar
+├── MetricsGrid
+│   ├── MetricCard
+│   ├── MetricCard
+│   ├── MetricCard
+│   └── MetricCard
+├── RecentCommunicationsTable
+├── AIActivityFeed
+└── AnalyticsCharts
+```
+
+---
+
+# Screen 2 — New Communication (Step 1)
+
+## Route
+```txt
+/new-communication
+```
+
+---
+
+# Purpose
+Primary communication composition screen.
+
+Users paste raw technical messages.
+
+AI transforms them.
+
+---
+
+# Layout Structure
+
+## Top Stepper
+
+### Steps
+1. Input Message
+2. Review Output
+3. Publish
+
+### Behavior
+- Active step highlighted
+- Completed steps show green check
+- Future steps disabled
+
+---
+
+# Main Input Card
+
+## Card Title
+Compose Your Message
+
+## Subtitle
+“Paste your technical message below. AI will transform it into audience-friendly communication.”
+
+---
+
+# Input Fields
+
+## Raw Message Textarea
+
+### Purpose
+Accept raw technical communication.
+
+### Features
+- Auto-resize
+- Character counter
+- Syntax highlighting optional
+- Max length: 2000
+- Placeholder example
+
+### Example Placeholder
+```txt
+The Kubernetes cluster ingress controller experienced TLS certificate rotation failure...
+```
+
+---
+
+## Target Audience Dropdown
+
+### Options
+- Frontline Workers
+- Office Employees
+- IT Staff
+- Executives
+- External Partners
+
+### Behavior
+Changing audience updates:
+- tone preview
+- vocabulary rules
+- AI guidance
+
+---
+
+## Destination Channel Dropdown
+
+### Options
+- Viva Engage
+- Microsoft Teams
+- Slack
+- Email
+- SMS
+
+---
+
+## Tone Customization
+
+### Options
+- Professional
+- Calm
+- Reassuring
+- Executive
+- Urgent
+- Friendly
+
+---
+
+## Language Selector
+
+### Supported Languages
+- English
+- Swedish
+- German
+- French
+- Spanish
+
+---
+
+# AI Guidance Panel
+
+## Purpose
+Show audience transformation rules.
+
+### Example
+```txt
+Audience: Frontline Workers
+Avoid jargon and acronyms.
+Focus on employee impact.
+```
+
+---
+
+# Action Buttons
+
+## Transform with AI
+
+### Behavior
+- Sends request to backend
+- Shows loading state
+- Displays AI processing animation
+
+---
+
+# Step 1 API
+
+## POST /api/transform
+
+Request:
+
+```json
+{
+  "message": "...",
+  "audience": "frontline",
+  "channel": "teams",
+  "tone": "reassuring",
+  "language": "en"
+}
+```
+
+---
+
+# Step 1 Components
+
+```txt
+NewCommunicationPage
+├── WorkflowStepper
+├── InputCard
+│   ├── RawMessageTextarea
+│   ├── AudienceDropdown
+│   ├── ChannelDropdown
+│   ├── ToneSelector
+│   ├── LanguageSelector
+│   └── TransformButton
+├── AIContextPanel
+└── PromptPreviewDrawer
+```
+
+---
+
+# Screen 3 — Review Output (Step 2)
+
+## Route
+```txt
+/review
+```
+
+---
+
+# Purpose
+Human review and approval stage.
+
+This is the most critical enterprise AI screen.
+
+---
+
+# Layout
+
+## Left Side
+AI-generated communication sections.
+
+## Right Side
+AI governance and explainability panel.
+
+---
+
+# AI Message Sections
+
+## Sections
+
+### 1. What Is Happening
+
+### 2. What It Means for You
+
+### 3. What You Need To Do
+
+### 4. Need Help?
+
+---
+
+# Section Card Features
+
+## Capabilities
+- Inline editing
+- Expand/collapse
+- Regenerate section only
+- AI explanation tooltip
+- Copy section
+- Version history
+
+---
+
+# AI Explainability Panel
+
+## Purpose
+Explain why AI generated this output.
+
+### Contents
+- Audience reasoning
+- Tone reasoning
+- Simplification score
+- Sensitive data masking
+- Confidence score
+- Compliance indicators
+
+---
+
+# AI Confidence Indicators
+
+## Confidence Levels
+| Level | Meaning |
+|---|---|
+| High | Safe enterprise output |
+| Medium | Human review recommended |
+| Low | Requires manual revision |
+
+---
+
+# Compliance Checks
+
+## Checks
+- Sensitive data leakage
+- Technical jargon detection
+- Acronym detection
+- Tone compliance
+- Accessibility readability score
+
+---
+
+# Actions
+
+## Regenerate
+Re-run transformation.
+
+## Edit All
+Enable editable mode.
+
+## Approve & Continue
+Move to publish step.
+
+---
+
+# Step 2 API
+
+## POST /api/regenerate
+
+## POST /api/explain
+
+## POST /api/compliance-check
+
+---
+
+# Step 2 Components
+
+```txt
+ReviewOutputPage
+├── WorkflowStepper
+├── AIMessagePanel
+│   ├── SectionCard
+│   ├── SectionCard
+│   ├── SectionCard
+│   └── SectionCard
+├── AIExplainabilityPanel
+├── CompliancePanel
+└── ActionBar
+```
+
+---
+
+# Screen 4 — Publish (Step 3)
+
+## Route
+```txt
+/publish
+```
+
+---
+
+# Purpose
+Finalize and publish approved communication.
+
+---
+
+# Layout
+
+## Left Side
+Publishing configuration.
+
+## Right Side
+Final communication preview.
+
+---
+
+# Destination Channel Selector
+
+## Supported Channels
+- Viva Engage
+- Microsoft Teams
+- Slack
+- Email
+
+---
+
+# Channel Configuration
+
+## Viva Engage
+- Community selector
+- Post preview
+
+## Teams
+- Team selector
+- Channel selector
+
+## Slack
+- Workspace selector
+- Channel selector
+
+---
+
+# Scheduling Section
+
+## Features
+- Publish now
+- Schedule later
+- Timezone selection
+- Recurring schedule
+
+---
+
+# Approval Workflow
+
+## Features
+- Require manager approval
+- Require compliance approval
+- Multi-stage approval
+
+---
+
+# Final Preview Panel
+
+## Features
+- Exact channel formatting
+- Mobile preview
+- Desktop preview
+- Accessibility preview
+
+---
+
+# Publish Actions
+
+## Buttons
+- Back to Review
+- Save Draft
+- Schedule
+- Publish Now
+
+---
+
+# Step 3 API
+
+## POST /api/publish
+
+Request:
+
+```json
+{
+  "message": {},
+  "channel": "teams",
+  "scheduledAt": "2026-06-01T09:00",
+  "approvalRequired": true
+}
+```
+
+---
+
+# Step 3 Components
+
+```txt
+PublishPage
+├── WorkflowStepper
+├── ChannelConfigurationPanel
+├── SchedulingPanel
+├── ApprovalWorkflowPanel
+├── PublishPreview
+└── PublishActions
+```
+
+---
+
+# Screen 5 — Publish Success
+
+## Route
+```txt
+/publish-success
+```
+
+---
+
+# Purpose
+Provide publish confirmation and next actions.
+
+---
+
+# Main Content
+
+## Success Icon
+Large green animated success check.
+
+---
+
+## Confirmation Details
+
+### Fields
+- Channel
+- Audience
+- Publish timestamp
+- Message ID
+- Approval chain
+
+---
+
+# Actions
+
+## Buttons
+- Send Another Message
+- View Analytics
+- View Published Post
+- Download Report
+
+---
+
+# Success Components
+
+```txt
+PublishSuccessPage
+├── SuccessAnimation
+├── SuccessSummary
+├── PublishedChannelCard
+└── SuccessActions
+```
+
+---
+
+# Screen 6 — History
+
+## Route
+```txt
+/history
+```
+
+---
+
+# Purpose
+Enterprise communication archive.
+
+---
+
+# Features
+
+## Search
+- Full-text search
+- Audience filtering
+- Channel filtering
+- Status filtering
+- Date range filtering
+
+---
+
+# History Table Columns
+
+| Column | Purpose |
+|---|---|
+| Title | Communication title |
+| Audience | Target audience |
+| Status | Draft / Published |
+| AI Confidence | AI quality score |
+| Version | Current version |
+| Updated | Last updated |
+
+---
+
+# History Actions
+
+## Per Row Actions
+- View
+- Edit
+- Duplicate
+- Republish
+- Export PDF
+- Delete
+
+---
+
+# Versioning Support
+
+## Features
+- Track all edits
+- Compare versions
+- Restore previous version
+
+---
+
+# History Components
+
+```txt
+HistoryPage
+├── SearchToolbar
+├── FilterPanel
+├── CommunicationsTable
+├── VersionDrawer
+└── ExportActions
+```
+
+---
+
+# Screen 7 — Templates
+
+## Route
+```txt
+/templates
+```
+
+---
+
+# Purpose
+Reusable communication templates.
+
+---
+
+# Template Categories
+
+- Incident Reports
+- Maintenance Notices
+- Security Alerts
+- Service Restorations
+- Executive Updates
+
+---
+
+# Template Card
+
+## Fields
+- Template name
+- Usage count
+- Audience type
+- Channel compatibility
+- Last updated
+
+---
+
+# Template Actions
+
+- Use Template
+- Edit Template
+- Duplicate
+- Archive
+
+---
+
+# AI-Assisted Templates
+
+## Features
+- AI suggests templates
+- Auto-fill placeholders
+- Dynamic variables
+
+---
+
+# Template Components
+
+```txt
+TemplatesPage
+├── TemplateCategoryTabs
+├── TemplateGrid
+├── TemplateCard
+└── TemplateEditorDrawer
+```
+
+---
+
+# Screen 8 — Settings
+
+## Route
+```txt
+/settings
+```
+
+---
+
+# Purpose
+User and enterprise configuration.
+
+---
+
+# Settings Tabs
+
+## General
+- Default audience
+- Default channel
+- Timezone
+- Language
+
+## AI Preferences
+- Preferred model
+- Tone defaults
+- AI aggressiveness
+- Auto-simplification level
+
+## Channels
+- Teams integration
 - Slack integration
-- Approval & publishing workflow
-- Reusable communication templates
-- Message history & versioning
-- Analytics dashboard & engagement tracking
+- Viva Engage integration
+
+## Notifications
+- Email alerts
+- Approval notifications
+- Publish confirmations
+
+## Security
+- API tokens
+- RBAC
+- Session management
 
 ---
 
-## Phase 5 — Enterprise Maturity
-Strengthen scalability, governance, security, and enterprise operational readiness.
+# Settings Components
 
-### Planned Enhancements
-- Audit logging & traceability
-- RBAC & enterprise authentication
-- Compliance & governance controls
-- Performance optimization
-- AI response caching
-- Enterprise-grade reliability improvements
+```txt
+SettingsPage
+├── SettingsTabs
+├── GeneralSettings
+├── AIPreferences
+├── ChannelIntegrations
+├── NotificationSettings
+└── SecuritySettings
+```
 
 ---
 
+# Screen 9 — Analytics Dashboard
+
+## Route
+```txt
+/analytics
+```
+
 ---
 
+# Purpose
+Measure communication impact.
 
+---
 
-*PoC built for Electrolux — AI-Assisted Technical Communication Agent*  
-*May 2026*
+# KPI Metrics
+
+- Total Views
+- Engagement Rate
+- Click-through Rate
+- Read Completion
+- Average Sentiment
+- Helpdesk Ticket Reduction
+
+---
+
+# Charts
+
+## Engagement Over Time
+Line chart.
+
+## Channel Distribution
+Pie chart.
+
+## Audience Engagement
+Bar chart.
+
+## Sentiment Analysis
+Heatmap.
+
+---
+
+# AI Impact Metrics
+
+## Example
+```txt
+AI-generated communications reduced support tickets by 28%.
+```
+
+---
+
+# Analytics Components
+
+```txt
+AnalyticsPage
+├── MetricsOverview
+├── EngagementCharts
+├── ChannelPerformance
+├── SentimentAnalysis
+└── AIImpactInsights
+```
+
+---
+
+# Screen 10 — Audit Logs
+
+## Route
+```txt
+/audit-logs
+```
+
+---
+
+# Purpose
+Enterprise governance and traceability.
+
+---
+
+# Audit Log Fields
+
+| Field | Purpose |
+|---|---|
+| User | Who performed action |
+| Action | What happened |
+| Timestamp | When |
+| AI Model | Which AI model |
+| Channel | Publish destination |
+| Compliance Result | Governance status |
+
+---
+
+# Audit Features
+
+- Immutable logs
+- Export CSV
+- Compliance filtering
+- Security monitoring
+
+---
+
+# Audit Components
+
+```txt
+AuditLogsPage
+├── AuditFilters
+├── AuditTable
+├── ComplianceIndicators
+└── ExportControls
+```
+
+---
+
+# Enterprise AI Features
+
+# RAG Architecture
+
+## Purpose
+Provide company-specific context.
+
+---
+
+# Knowledge Sources
+
+- Internal communication policies
+- Incident templates
+- Brand guidelines
+- Compliance rules
+- Historical communications
+
+---
+
+# Governance Features
+
+## Sensitive Data Detection
+- API keys
+- Passwords
+- Internal IPs
+- Employee data
+
+---
+
+# AI Explainability
+
+## Example Insights
+
+```txt
+The AI simplified 12 technical terms for frontline workers.
+```
+
+---
+
+# Recommended Frontend Stack
+
+## Framework
+React + Vite
+
+## Styling
+Tailwind CSS
+
+## State Management
+Zustand
+
+## Data Fetching
+React Query
+
+## Forms
+React Hook Form
+
+## Charts
+Recharts
+
+## Animations
+Framer Motion
+
+## Tables
+TanStack Table
+
+---
+
+# Recommended Backend Stack
+
+## Backend
+Node.js + Express
+
+## AI
+Gemini via OpenRouter
+
+## Database
+PostgreSQL
+
+## Authentication
+Azure AD / Auth0
+
+## Queue
+BullMQ
+
+## Caching
+Redis
+
+---
+
+# Enterprise UX Guidelines
+
+## UX Principles
+
+### 1. Human-in-the-loop AI
+Humans always approve before publishing.
+
+### 2. AI Transparency
+Always explain why AI generated output.
+
+### 3. Enterprise Safety
+Never auto-publish without governance.
+
+### 4. Accessibility
+WCAG-compliant interfaces.
+
+### 5. Trustworthy AI
+Show confidence indicators and compliance badges.
+
+---
+
+# Final Notes for Copilot / Cline
+
+When generating code:
+
+## Priorities
+1. Modular components
+2. Reusable cards
+3. Responsive layout
+4. Enterprise-grade UX
+5. Semantic accessibility
+6. Loading states
+7. Empty states
+8. Error states
+9. Skeleton loaders
+10. Type-safe APIs
+
+---
+
+# Suggested Folder Structure
+
+```txt
+src/
+├── pages/
+├── components/
+├── layouts/
+├── services/
+├── hooks/
+├── store/
+├── utils/
+├── types/
+├── styles/
+└── assets/
+```
+
+---
+
+# Suggested Component Structure
+
+```txt
+components/
+├── dashboard/
+├── communication/
+├── ai/
+├── analytics/
+├── governance/
+├── publish/
+└── shared/
+```
+
+---
+
+# End of README Specification
+

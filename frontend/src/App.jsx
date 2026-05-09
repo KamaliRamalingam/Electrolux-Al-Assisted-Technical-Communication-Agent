@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import './App.css';
 
 import Sidebar            from './components/Sidebar';
@@ -7,8 +7,18 @@ import Step1_InputForm    from './components/Step1_InputForm';
 import Step2_ReviewPanel  from './components/Step2_ReviewPanel';
 import Step3_PublishPanel from './components/Step3_PublishPanel';
 import PlaceholderView    from './components/PlaceholderView';
+import DashboardPage      from './components/DashboardPage';
 
 import { transformMessage, publishMessage, publishToTeams } from './services/api';
+
+/* ── Audience display name map ───────────────────────────────────── */
+const AUDIENCE_LABELS = {
+  frontline:  'Frontline Workers',
+  office:     'Office Employees',
+  it:         'IT Staff',
+  executives: 'Executives',
+  partners:   'External Partners',
+};
 
 const STEP_LABELS = {
   1: 'Input Your Message',
@@ -16,14 +26,49 @@ const STEP_LABELS = {
   3: 'Publish'
 };
 
+/**
+ * Derive a short title from a raw technical message.
+ * Takes the first sentence or first 80 characters.
+ */
+function deriveTitle(raw) {
+  const firstSentence = raw.split(/[.\n]/)[0].trim();
+  if (firstSentence.length >= 10 && firstSentence.length <= 90) return firstSentence;
+  return raw.slice(0, 80).trim() + (raw.length > 80 ? '…' : '');
+}
+
+/**
+ * Build a human-readable AI summary from the transformed sections.
+ */
+function buildAiSummary(tm, audienceLabel, channelName) {
+  const happening   = (tm?.what_is_happening     || '').slice(0, 80).trim();
+  const actionNeeded = (tm?.what_you_need_to_do  || '').slice(0, 60).trim();
+  const parts = [];
+  if (happening)    parts.push(`Summary: "${happening}…"`);
+  if (actionNeeded) parts.push(`Action: "${actionNeeded}…"`);
+  parts.push(`Audience: ${audienceLabel}. Channel: ${channelName}.`);
+  return parts.join(' ');
+}
+
+/**
+ * Deterministic confidence score (85–97) based on entry id.
+ */
+function calcConfidence(id) {
+  return 85 + (id * 7 + 3) % 13;
+}
+
 export default function App() {
   // ── Layout state ──────────────────────────────────────────────────
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen,      setSidebarOpen]      = useState(false); // mobile
-  const [activeNavItem,    setActiveNavItem]     = useState('new');
+  const [activeNavItem,    setActiveNavItem]     = useState('dashboard');
 
-  // 'wizard' | 'history' | 'templates' | 'settings'
-  const [activeView, setActiveView] = useState('wizard');
+  // 'dashboard' | 'wizard' | 'history' | 'templates' | 'settings' | 'analytics' | 'audit-logs'
+  const [activeView, setActiveView] = useState('dashboard');
+
+  // ── Communications history (dynamic dashboard data) ───────────────
+  const [communications, setCommunications] = useState([]);
+  const commIdCounter = useRef(0);        // monotonically increasing id
+  const currentCommId = useRef(null);     // id of the comm being worked on
 
   // ── Wizard state ──────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState(1);
@@ -54,6 +99,25 @@ export default function App() {
       if (result.success) {
         setTransformedMessage(result.transformedMessage);
         setCurrentStep(2);
+
+        // ── Record a new Draft communication ──
+        const newId = ++commIdCounter.current;
+        currentCommId.current = newId;
+        const audienceLabel = AUDIENCE_LABELS[audience] || audience;
+        const newComm = {
+          id:               newId,
+          title:            deriveTitle(rawMessage),
+          audience:         audienceLabel,
+          channel,
+          status:           'Draft',
+          updated:          new Date().toISOString(),
+          transformedMessage: result.transformedMessage,
+          confidence:       calcConfidence(newId),
+          aiSummary:        buildAiSummary(result.transformedMessage, audienceLabel, channel),
+          publishedAt:      null,
+        };
+        setCommunications(prev => [newComm, ...prev]);
+
       } else {
         setError(result.error || 'AI transformation failed. Please try again.');
       }
@@ -71,6 +135,19 @@ export default function App() {
       const result = await transformMessage(rawMessage, audience, channel);
       if (result.success) {
         setTransformedMessage(result.transformedMessage);
+
+        // ── Update the current Draft with refreshed AI output ──
+        const audienceLabel = AUDIENCE_LABELS[audience] || audience;
+        setCommunications(prev => prev.map(c =>
+          c.id === currentCommId.current
+            ? {
+                ...c,
+                transformedMessage: result.transformedMessage,
+                aiSummary: buildAiSummary(result.transformedMessage, audienceLabel, channel),
+                updated: new Date().toISOString(),
+              }
+            : c
+        ));
       } else {
         setError(result.error || 'Regeneration failed. Please try again.');
       }
@@ -101,6 +178,20 @@ export default function App() {
       if (result.success) {
         setPublishResult(result);
         setPublishStatus('success');
+
+        // ── Update comm to Published or Scheduled ──
+        const newStatus = scheduledAt ? 'Scheduled' : 'Published';
+        setCommunications(prev => prev.map(c =>
+          c.id === currentCommId.current
+            ? {
+                ...c,
+                status:      newStatus,
+                channel:     selectedChannel,
+                updated:     new Date().toISOString(),
+                publishedAt: result.publishedAt || new Date().toISOString(),
+              }
+            : c
+        ));
       } else {
         setError(result.error || 'Publish failed. Please try again.');
         setPublishStatus('error');
@@ -123,6 +214,7 @@ export default function App() {
     setPublishResult(null);
     setError(null);
     setIsLoading(false);
+    currentCommId.current = null;
     setActiveNavItem('new');
     setActiveView('wizard');
   }
@@ -145,7 +237,10 @@ export default function App() {
     sidebarOpen      ? 'sidebar-open'      : ''
   ].filter(Boolean).join(' ');
 
-  const showStepper = publishStatus !== 'success';
+  // Show the stepper only when the wizard is active and not yet success
+  const showStepper = activeView === 'wizard' && publishStatus !== 'success';
+  // Dashboard is full-bleed — no topbar step badge, no wrapper card
+  const isDashboard = activeView === 'dashboard';
 
   // ── Render ────────────────────────────────────────────────────────
   return (
@@ -159,6 +254,11 @@ export default function App() {
         onItemClick={key => {
           setActiveNavItem(key);
           setSidebarOpen(false); // close mobile drawer on selection
+
+          if (key === 'dashboard') {
+            setActiveView('dashboard');
+            return;
+          }
 
           if (key === 'new') {
             // Full reset → start a new communication
@@ -183,8 +283,8 @@ export default function App() {
             return;
           }
 
-          // Placeholder pages
-          if (['history', 'templates', 'settings'].includes(key)) {
+          // Placeholder & admin pages
+          if (['history', 'templates', 'settings', 'analytics', 'audit-logs'].includes(key)) {
             setActiveView(key);
             return;
           }
@@ -194,10 +294,9 @@ export default function App() {
       {/* ── Main content ── */}
       <div className="main-content">
 
-        {/* Top bar */}
+        {/* Top bar — hide step badge on dashboard */}
         <header className="main-topbar">
           <div className="topbar-left">
-            {/* Mobile hamburger */}
             <button
               className="topbar-hamburger"
               onClick={() => setSidebarOpen(o => !o)}
@@ -207,16 +306,18 @@ export default function App() {
             </button>
             <span className="topbar-heading">🤖 AI Communication Agent</span>
           </div>
-          <div className="topbar-right">
-            {showStepper && (
-              <span className="step-badge">
-                Step {currentStep} of 3 — {STEP_LABELS[currentStep]}
-              </span>
-            )}
-          </div>
+          {!isDashboard && (
+            <div className="topbar-right">
+              {showStepper && (
+                <span className="step-badge">
+                  Step {currentStep} of 3 — {STEP_LABELS[currentStep]}
+                </span>
+              )}
+            </div>
+          )}
         </header>
 
-        {/* Step progress bar */}
+        {/* Step progress bar — wizard only */}
         {showStepper && (
           <StepIndicator
             currentStep={currentStep}
@@ -224,94 +325,133 @@ export default function App() {
           />
         )}
 
-        {/* Step content */}
-        <main className="main-body">
-          <div className="content-card">
+        {/* ── Dashboard — full-width, no card wrapper ── */}
+        {isDashboard && (
+          <DashboardPage
+            communications={communications}
+            onNewCommunication={() => {
+              handleReset();
+              setActiveNavItem('new');
+            }}
+          />
+        )}
 
-            {/* ── Wizard (default view) ── */}
-            {activeView === 'wizard' && currentStep === 1 && (
-              <Step1_InputForm
-                rawMessage={rawMessage}
-                audience={audience}
-                channel={channel}
-                isLoading={isLoading}
-                error={error}
-                onMessageChange={setRawMessage}
-                onAudienceChange={setAudience}
-                onChannelChange={setChannel}
-                onTransform={handleTransform}
-              />
-            )}
+        {/* ── All other views — constrained card layout ── */}
+        {!isDashboard && (
+          <main className="main-body">
+            <div className="content-card">
 
-            {activeView === 'wizard' && currentStep === 2 && transformedMessage && (
-              <Step2_ReviewPanel
-                transformedMessage={transformedMessage}
-                audience={audience}
-                isLoading={isLoading}
-                error={error}
-                onMessageChange={setTransformedMessage}
-                onRegenerate={handleRegenerate}
-                onApprove={handleApprove}
-              />
-            )}
+              {/* Wizard steps */}
+              {activeView === 'wizard' && currentStep === 1 && (
+                <Step1_InputForm
+                  rawMessage={rawMessage}
+                  audience={audience}
+                  channel={channel}
+                  isLoading={isLoading}
+                  error={error}
+                  onMessageChange={setRawMessage}
+                  onAudienceChange={setAudience}
+                  onChannelChange={setChannel}
+                  onTransform={handleTransform}
+                />
+              )}
 
-            {activeView === 'wizard' && currentStep === 3 && transformedMessage && (
-              <Step3_PublishPanel
-                transformedMessage={transformedMessage}
-                audience={audience}
-                defaultChannel={channel}
-                isLoading={isLoading}
-                publishStatus={publishStatus}
-                publishResult={publishResult}
-                error={error}
-                onPublish={handlePublish}
-                onBack={() => { setError(null); setCurrentStep(2); }}
-                onReset={handleReset}
-              />
-            )}
+              {activeView === 'wizard' && currentStep === 2 && transformedMessage && (
+                <Step2_ReviewPanel
+                  transformedMessage={transformedMessage}
+                  audience={audience}
+                  isLoading={isLoading}
+                  error={error}
+                  onMessageChange={setTransformedMessage}
+                  onRegenerate={handleRegenerate}
+                  onApprove={handleApprove}
+                />
+              )}
 
-            {/* ── Placeholder pages ── */}
-            {activeView === 'history' && (
-              <PlaceholderView
-                icon="📋"
-                title="Communication History"
-                teaser="Review and resend all previously published messages in one place."
-                extras={[
-                  { icon: '🔍', text: 'Search & filter by audience, channel, or date' },
-                  { icon: '♻️', text: 'One-click re-publish or edit past messages' },
-                  { icon: '📊', text: 'Engagement metrics per communication' },
-                ]}
-              />
-            )}
+              {activeView === 'wizard' && currentStep === 3 && transformedMessage && (
+                <Step3_PublishPanel
+                  transformedMessage={transformedMessage}
+                  audience={audience}
+                  defaultChannel={channel}
+                  isLoading={isLoading}
+                  publishStatus={publishStatus}
+                  publishResult={publishResult}
+                  error={error}
+                  onPublish={handlePublish}
+                  onBack={() => { setError(null); setCurrentStep(2); }}
+                  onReset={handleReset}
+                />
+              )}
 
-            {activeView === 'templates' && (
-              <PlaceholderView
-                icon="📄"
-                title="Message Templates"
-                teaser="Save, share, and reuse approved message blueprints across your team."
-                extras={[
-                  { icon: '⭐', text: '3 saved templates ready to use' },
-                  { icon: '🏷️', text: 'Tag templates by audience or campaign' },
-                  { icon: '🤝', text: 'Share templates with colleagues' },
-                ]}
-              />
-            )}
+              {/* Placeholder pages */}
+              {activeView === 'history' && (
+                <PlaceholderView
+                  icon="📋"
+                  title="Communication History"
+                  teaser="Review and resend all previously published messages in one place."
+                  extras={[
+                    { icon: '🔍', text: 'Search & filter by audience, channel, or date' },
+                    { icon: '♻️', text: 'One-click re-publish or edit past messages' },
+                    { icon: '📊', text: 'Engagement metrics per communication' },
+                  ]}
+                />
+              )}
 
-            {activeView === 'settings' && (
-              <PlaceholderView
-                icon="⚙️"
-                title="Settings"
-                teaser="Configure your AI preferences, webhook integrations, and notification rules."
-                extras={[
-                  { icon: '🔑', text: 'Manage API keys and integrations' },
-                  { icon: '🌐', text: 'Default language and tone preferences' },
-                  { icon: '🔔', text: 'Notification and approval workflows' },
-                ]}
-              />
-            )}
+              {activeView === 'templates' && (
+                <PlaceholderView
+                  icon="📄"
+                  title="Message Templates"
+                  teaser="Save, share, and reuse approved message blueprints across your team."
+                  extras={[
+                    { icon: '⭐', text: '3 saved templates ready to use' },
+                    { icon: '🏷️', text: 'Tag templates by audience or campaign' },
+                    { icon: '🤝', text: 'Share templates with colleagues' },
+                  ]}
+                />
+              )}
 
-          </div>
-        </main>
+              {activeView === 'settings' && (
+                <PlaceholderView
+                  icon="⚙️"
+                  title="Settings"
+                  teaser="Configure your AI preferences, webhook integrations, and notification rules."
+                  extras={[
+                    { icon: '🔑', text: 'Manage API keys and integrations' },
+                    { icon: '🌐', text: 'Default language and tone preferences' },
+                    { icon: '🔔', text: 'Notification and approval workflows' },
+                  ]}
+                />
+              )}
+
+              {activeView === 'analytics' && (
+                <PlaceholderView
+                  icon="📊"
+                  title="Analytics Dashboard"
+                  teaser="Measure the real-world impact of every AI-assisted communication."
+                  extras={[
+                    { icon: '📈', text: 'Engagement trends across all channels' },
+                    { icon: '🎯', text: 'Audience reach and read-completion rates' },
+                    { icon: '🤖', text: 'AI confidence scores and simplification metrics' },
+                  ]}
+                />
+              )}
+
+              {activeView === 'audit-logs' && (
+                <PlaceholderView
+                  icon="🔒"
+                  title="Audit Logs"
+                  teaser="Full governance trail — every AI action, approval, and publish event."
+                  extras={[
+                    { icon: '📝', text: 'Track all edits, approvals, and rejections' },
+                    { icon: '🔍', text: 'Filter by user, date range, or event type' },
+                    { icon: '📤', text: 'Export compliance reports as PDF or CSV' },
+                  ]}
+                />
+              )}
+
+            </div>
+          </main>
+        )}
 
       </div>
     </div>
