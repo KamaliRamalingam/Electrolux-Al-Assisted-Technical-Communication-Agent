@@ -1,5 +1,9 @@
 import os
+import re
 import json
+import hmac
+import hashlib
+import asyncio
 import urllib.parse
 from contextlib import asynccontextmanager, AsyncExitStack
 from fastapi import FastAPI, Request, BackgroundTasks
@@ -123,6 +127,83 @@ async def validate_accuracy(original_text: str, simplified_text: str) -> dict:
     })
     return json.loads(result.content[0].text)
 
+# ── GitHub tools — proxied through the MCP server ──────────────────
+
+@tool
+async def get_github_repo(owner: str, repo: str) -> str:
+    """Fetch GitHub repository metadata: name, description, language, topics, and star count."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_repo", arguments={"owner": owner, "repo": repo})
+    return result.content[0].text
+
+@tool
+async def get_github_readme(owner: str, repo: str) -> str:
+    """Fetch and decode the README.md of a GitHub repository."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_readme", arguments={"owner": owner, "repo": repo})
+    return result.content[0].text
+
+@tool
+async def get_github_commits(owner: str, repo: str, branch: str = "main") -> str:
+    """List the most recent commits on a GitHub repository branch."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_commits", arguments={"owner": owner, "repo": repo, "branch": branch})
+    return result.content[0].text
+
+@tool
+async def get_github_commit_detail(owner: str, repo: str, sha: str) -> str:
+    """Get full detail of a specific commit: message, author, and files changed."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_commit_detail", arguments={"owner": owner, "repo": repo, "sha": sha})
+    return result.content[0].text
+
+@tool
+async def get_github_pull_request(owner: str, repo: str, pull_number: int) -> str:
+    """Get a GitHub pull request's title, body, and state."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_pull_request", arguments={"owner": owner, "repo": repo, "pull_number": pull_number})
+    return result.content[0].text
+
+@tool
+async def get_github_pr_files(owner: str, repo: str, pull_number: int) -> str:
+    """List files changed in a GitHub pull request."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_pr_files", arguments={"owner": owner, "repo": repo, "pull_number": pull_number})
+    return result.content[0].text
+
+@tool
+async def get_github_issue(owner: str, repo: str, issue_number: int) -> str:
+    """Get a GitHub issue's title and body. Use when a commit references an issue (e.g. 'Fixes #42')."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_issue", arguments={"owner": owner, "repo": repo, "issue_number": issue_number})
+    return result.content[0].text
+
+@tool
+async def get_github_issue_comments(owner: str, repo: str, issue_number: int) -> str:
+    """Get discussion comments on a GitHub issue for context behind a fix."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_issue_comments", arguments={"owner": owner, "repo": repo, "issue_number": issue_number})
+    return result.content[0].text
+
+@tool
+async def get_github_open_issues(owner: str, repo: str) -> str:
+    """List recent open issues in a GitHub repository."""
+    await init_mcp()
+    result = await mcp_session.call_tool("get_github_open_issues", arguments={"owner": owner, "repo": repo})
+    return result.content[0].text
+
+@tool
+async def find_github_pull_request_for_branch(owner: str, repo: str, branch: str) -> str:
+    """Find the open pull request for a given branch to understand the intent of a push."""
+    await init_mcp()
+    result = await mcp_session.call_tool("find_github_pull_request_for_branch", arguments={"owner": owner, "repo": repo, "branch": branch})
+    return result.content[0].text
+
+tools = [detect_audience, simplify_text, validate_accuracy,
+         get_github_repo, get_github_readme, get_github_commits, get_github_commit_detail,
+         get_github_pull_request, get_github_pr_files, get_github_issue, get_github_issue_comments,
+         get_github_open_issues, find_github_pull_request_for_branch]
+=======
 @tool
 async def list_enterprise_docs() -> str:
     """List all available enterprise project documentation files to find relevant context."""
@@ -140,6 +221,7 @@ async def read_enterprise_doc(filename: str) -> str:
     return result.content[0].text
 
 tools = [detect_audience, simplify_text, validate_accuracy, list_enterprise_docs, read_enterprise_doc]
+main
 
 # Build the LangGraph ReAct Agent
 llm = ChatOpenAI(
@@ -395,6 +477,184 @@ async def jira_webhook(req: Request):
     send_to_slack(simplified)
 
     return {"status": "ok"}
+
+# ──────────────────────────────────────────────
+# GitHub Webhook: push → AI simplification → Slack #updates
+# ──────────────────────────────────────────────
+
+def _verify_github_signature(secret: str, body: bytes, signature_header: str) -> bool:
+    expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()  # noqa: S324
+    return hmac.compare_digest(expected, signature_header or "")
+
+def _extract_issue_numbers(messages: list[str]) -> list[int]:
+    """Extract referenced GitHub issue numbers from commit messages (e.g. 'Fixes #42')."""
+    numbers = []
+    for msg in messages:
+        for match in re.findall(r"#(\d+)", msg):
+            numbers.append(int(match))
+    return list(set(numbers))
+
+async def _process_github_push(owner: str, repo_name: str, branch: str,
+                                pusher: str, commit_messages: list[str], head_sha: str):
+    """Fetch rich repo context via GitHub MCP tools, simplify, and post to Slack."""
+    print(f"[GitHub] Processing push: {owner}/{repo_name} branch={branch} sha={head_sha}")
+    try:
+        # Core context: repo info, README, and latest commit — in parallel
+        repo_info, readme, commit_detail = await asyncio.gather(
+            get_github_repo.ainvoke({"owner": owner, "repo": repo_name}),
+            get_github_readme.ainvoke({"owner": owner, "repo": repo_name}),
+            get_github_commit_detail.ainvoke({"owner": owner, "repo": repo_name, "sha": head_sha}),
+        )
+        print(f"[GitHub] Core context fetched for {owner}/{repo_name}")
+        print(f"[GitHub] README snippet: {str(readme)[:120]}...")
+        print(f"[GitHub] Commit detail: {str(commit_detail)[:120]}...")
+
+        # Open issues — gives context on known problems being worked on
+        open_issues_context = ""
+        try:
+            issues_raw = await get_github_open_issues.ainvoke({"owner": owner, "repo": repo_name})
+            issues = json.loads(issues_raw)
+            if isinstance(issues, list) and issues:
+                issue_titles = [f"#{i.get('number')} {i.get('title','')}" for i in issues[:4]]
+                open_issues_context = "Open issues: " + " | ".join(issue_titles)
+        except Exception as e:
+            print(f"[GitHub] Could not fetch open issues: {e}")
+
+        # Open PR for this branch — PR description explains the "why"
+        pr_context = ""
+        try:
+            pr_data = await find_github_pull_request_for_branch.ainvoke(
+                {"owner": owner, "repo": repo_name, "branch": branch}
+            )
+            prs = json.loads(pr_data)
+            if isinstance(prs, list) and prs:
+                pr = prs[0]
+                pr_number = pr.get("number")
+                pr_title = pr.get("title", "")
+                pr_body = (pr.get("body") or "")[:300]
+                pr_files_raw = await get_github_pr_files.ainvoke(
+                    {"owner": owner, "repo": repo_name, "pull_number": pr_number}
+                )
+                files = json.loads(pr_files_raw)
+                file_names = [f.get("filename", "") for f in files[:8]] if isinstance(files, list) else []
+                pr_context = (
+                    f"Pull Request #{pr_number}: {pr_title}\n"
+                    f"PR Description: {pr_body}\n"
+                    f"Files changed: {', '.join(file_names)}"
+                )
+                print(f"[GitHub] Found linked PR #{pr_number}")
+        except Exception as e:
+            print(f"[GitHub] No linked PR found: {e}")
+
+        # Issues referenced in commit messages (e.g. "Fixes #42")
+        issue_context = ""
+        try:
+            issue_numbers = _extract_issue_numbers(commit_messages)
+            if issue_numbers:
+                issue_texts = []
+                for num in issue_numbers[:3]:
+                    issue_raw = await get_github_issue.ainvoke(
+                        {"owner": owner, "repo": repo_name, "issue_number": num}
+                    )
+                    issue = json.loads(issue_raw)
+                    title = issue.get("title", "")
+                    body = (issue.get("body") or "")[:200]
+                    # Also grab a comment or two for extra context
+                    try:
+                        comments_raw = await get_github_issue_comments.ainvoke(
+                            {"owner": owner, "repo": repo_name, "issue_number": num}
+                        )
+                        comments = json.loads(comments_raw)
+                        if isinstance(comments, list) and comments:
+                            comment_snippet = comments[0].get("body", "")[:150]
+                            body += f" [Discussion: {comment_snippet}]"
+                    except Exception:
+                        pass
+                    issue_texts.append(f"Issue #{num} — {title}: {body}")
+                issue_context = "\n".join(issue_texts)
+                print(f"[GitHub] Fetched {len(issue_numbers)} referenced issue(s)")
+        except Exception as e:
+            print(f"[GitHub] Could not fetch referenced issues: {e}")
+
+        commits_text = " | ".join(commit_messages) if commit_messages else "No commit messages"
+
+        summary = (
+            f"Repository: {owner}/{repo_name}\n"
+            f"Branch: {branch}\n"
+            f"Pushed by: {pusher}\n"
+            f"Commit messages: {commits_text}\n"
+            f"Commit detail: {str(commit_detail)[:400]}\n"
+            f"Repository info: {str(repo_info)[:300]}\n"
+            f"README snippet: {str(readme)[:300]}"
+        )
+        if open_issues_context:
+            summary += f"\n{open_issues_context}"
+        if pr_context:
+            summary += f"\n{pr_context}"
+        if issue_context:
+            summary += f"\nReferenced issues:\n{issue_context}"
+
+        system_prompt = (
+            "You are an AI that converts GitHub push events into simple, plain-English Slack updates. "
+            "Your audience is non-technical — managers, stakeholders, and team members who don't write code. "
+            "Write 2-3 sentences max. Explain WHAT changed and WHY it matters, not HOW it was done. "
+            "If a pull request description or issue title is available, use it to explain the purpose. "
+            "No jargon. No file names. No branch names unless they are meaningful to a non-dev."
+        )
+
+        result = await agent.ainvoke({
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Summarise this GitHub push for a non-technical audience:\n\n{summary}"}
+            ]
+        })
+
+        simplified = result["messages"][-1].content
+        send_to_slack_updates(f"*GitHub Update — {owner}/{repo_name}*\n{simplified}")
+        print(f"[Agent] GitHub push update posted to Slack for {owner}/{repo_name}")
+
+    except Exception as e:
+        print(f"[Agent] Error processing GitHub push: {e}")
+        send_to_slack_updates(
+            f"*GitHub Update — {owner}/{repo_name}*\n"
+            f"New code was pushed to the {branch} branch by {pusher}.\n"
+            f"Commits: {', '.join(commit_messages)}"
+        )
+
+@app.post("/github/webhook")
+async def github_webhook(req: Request, background_tasks: BackgroundTasks):
+    body = await req.body()
+    event_type = req.headers.get("X-GitHub-Event", "")
+
+    # Verify signature if secret is configured
+    webhook_secret = os.environ.get("GITHUB_WEBHOOK_SECRET")
+    if webhook_secret:
+        sig = req.headers.get("X-Hub-Signature-256", "")
+        if not _verify_github_signature(webhook_secret, body, sig):
+            return JSONResponse(status_code=401, content={"error": "Invalid signature"})
+
+    # Only process push events
+    if event_type != "push":
+        return JSONResponse({"status": "ignored", "event": event_type})
+
+    data = json.loads(body)
+
+    repo = data.get("repository", {})
+    owner = repo.get("owner", {}).get("login", "")
+    repo_name = repo.get("name", "")
+    ref = data.get("ref", "refs/heads/main")
+    branch = ref.replace("refs/heads/", "")
+    pusher = data.get("pusher", {}).get("name", "someone")
+    commits = data.get("commits", [])
+    commit_messages = [c.get("message", "").split("\n")[0] for c in commits]
+    head_sha = data.get("after", "")
+
+    background_tasks.add_task(
+        _process_github_push, owner, repo_name, branch, pusher, commit_messages, head_sha
+    )
+
+    return JSONResponse({"status": "ok", "message": "Processing push event"})
+
 
 if __name__ == "__main__":
     import uvicorn
