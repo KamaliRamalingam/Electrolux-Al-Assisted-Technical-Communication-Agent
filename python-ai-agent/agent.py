@@ -182,6 +182,16 @@ async def process_and_respond(text: str, response_url: str):
             })
 
 from pydantic import BaseModel
+from openai import OpenAI as _OpenAIClient
+
+# ── Mock-AI mode: set USE_MOCK_AI=true in .env to run without a real API key ──
+USE_MOCK_AI = os.environ.get("USE_MOCK_AI", "false").lower() == "true"
+
+AUDIENCE_LABELS = {
+    "frontline": "Frontline Workers",
+    "office":    "Office Employees",
+    "it":        "IT Staff",
+}
 
 class SimplifyRequest(BaseModel):
     text: str
@@ -191,6 +201,55 @@ class SimplifyRequest(BaseModel):
 
 class PublishRequest(BaseModel):
     message: str
+
+# ── Phase 1 UI request models ────────────────────────────────────────────────
+class TransformRequest(BaseModel):
+    rawMessage: str
+    audience: str = "frontline"
+    channel: str = "Viva Engage"
+
+class PublishMessageRequest(BaseModel):
+    transformedMessage: dict
+    channel: str = "Viva Engage"
+    audience: str = "frontline"
+    scheduledAt: str = None
+
+# ── Phase 1 transform helper ─────────────────────────────────────────────────
+async def run_transform_v2(raw_message: str, audience: str, channel: str) -> dict:
+    """Transform a raw message into a 4-section structured output."""
+    if USE_MOCK_AI:
+        return {
+            "what_is_happening":      f"[MOCK] A planned maintenance window has been scheduled for {channel}. Our engineering team is performing routine upgrades to improve system reliability.",
+            "what_it_means_for_you":  f"[MOCK] As {AUDIENCE_LABELS.get(audience, audience)}, you may experience brief service interruptions during the maintenance window.",
+            "what_you_need_to_do":    "[MOCK] Please save your work and log out before the maintenance window begins. You can resume normal activities once the window is complete.",
+            "help":                   "[MOCK] For questions or urgent issues, contact IT Support at helpdesk@company.com or call extension 4444.",
+        }
+
+    audience_label = AUDIENCE_LABELS.get(audience, audience)
+    client = _OpenAIClient(
+        api_key=os.environ.get("OPENROUTER_API_KEY", "dummy"),
+        base_url="https://openrouter.ai/api/v1",
+    )
+    prompt = (
+        f"You are an expert enterprise communication specialist.\n"
+        f"Transform the following raw message into a structured 4-section communication "
+        f"for {audience_label} to be published on {channel}.\n\n"
+        f"Return ONLY valid JSON with exactly these four keys:\n"
+        f'{{\n'
+        f'  "what_is_happening": "Clear explanation of what is happening (2-3 sentences)",\n'
+        f'  "what_it_means_for_you": "What this means for {audience_label} specifically (2-3 sentences)",\n'
+        f'  "what_you_need_to_do": "Clear action items for the audience (2-3 sentences)",\n'
+        f'  "help": "Who to contact for help or questions (1-2 sentences)"\n'
+        f"}}\n\n"
+        f"Raw message: {raw_message}"
+    )
+    response = client.chat.completions.create(
+        model="google/gemini-2.5-flash",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0.3,
+    )
+    return json.loads(response.choices[0].message.content)
 
 # ──────────────────────────────────────────────
 # Slack helper: UPDATES channel (frontend publishes)
@@ -218,6 +277,55 @@ def send_to_slack_updates(message: str):
         print("[Agent] Message posted to #updates channel")
     except Exception as e:
         print(f"[Agent] Error sending to #updates channel: {e}")
+
+# ── Phase 1 UI endpoints ─────────────────────────────────────────────────────
+
+@app.post("/transform")
+async def transform_endpoint(req: TransformRequest):
+    """Transform a raw message into a structured 4-section AI output for the Phase 1 wizard."""
+    try:
+        result = await run_transform_v2(req.rawMessage, req.audience, req.channel)
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (original_text, simplified_text, audience, status, created_at) VALUES (?, ?, ?, ?, ?)",
+            (req.rawMessage, json.dumps(result), req.audience, 'Draft', datetime.now().isoformat()),
+        )
+        cursor.execute("UPDATE analytics SET messages_generated = messages_generated + 1")
+        conn.commit()
+        conn.close()
+        return {"success": True, "transformedMessage": result}
+    except Exception as e:
+        print(f"[Agent] /transform error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/publish")
+async def publish_message_endpoint(req: PublishMessageRequest):
+    """Store a published 4-section message and return a success response for the Phase 1 wizard."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (original_text, simplified_text, audience, status, created_at) VALUES (?, ?, ?, ?, ?)",
+            ('', json.dumps(req.transformedMessage), req.audience, 'Published', datetime.now().isoformat()),
+        )
+        cursor.execute("UPDATE analytics SET messages_published = messages_published + 1")
+        conn.commit()
+        conn.close()
+        published_at = req.scheduledAt or datetime.now().isoformat()
+        return {
+            "success":     True,
+            "channel":     req.channel,
+            "audience":    req.audience,
+            "publishedAt": published_at,
+        }
+    except Exception as e:
+        print(f"[Agent] /publish error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+# ── Legacy endpoints ──────────────────────────────────────────────────────────
 
 @app.post("/simplify")
 async def simplify_endpoint(req: SimplifyRequest):

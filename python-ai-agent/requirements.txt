@@ -1,8 +1,10 @@
 langchain-core
 langchain-openai
 langgraph
-mcp
+mcp[cli]
 fastapi
 uvicorn
 python-dotenv
 httpx
+requests
+openai
