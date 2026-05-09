@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.glass-panel {
+  @apply bg-slate-900/50 backdrop-blur-md border border-slate-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl;
+}
+
+.glow-border {
+  @apply relative;
+}
+
+.glow-border::before {
+  content: '';
+  @apply absolute -inset-[1px] bg-gradient-to-r from-brand-500/50 via-purple-500/50 to-brand-500/50 rounded-lg z-[-1] opacity-0 transition-opacity duration-300;
+}
+
+.glow-border:hover::before {
+  @apply opacity-100;
+}
