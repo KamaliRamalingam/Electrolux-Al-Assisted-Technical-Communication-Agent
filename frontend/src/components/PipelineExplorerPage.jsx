@@ -61,6 +61,25 @@ const pipelines = {
       { id: 'e3-1', source: '3', target: '1', animated: true, label: 'Retry', style: { stroke: '#ef4444' }, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e2-4', source: '2', target: '4', animated: true, label: 'Passes', style: { stroke: '#10b981' }, markerEnd: { type: MarkerType.ArrowClosed } },
     ]
+  },
+  grounding: {
+    name: 'Enterprise Context Grounding',
+    description: 'Autonomous retrieval of project documentation using MCP filesystem tools to ground AI generations in real enterprise context.',
+    nodes: [
+      { id: '1', type: 'input', data: { label: 'Technical Input' }, position: { x: 50, y: 150 }, style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #475569', borderRadius: '8px', padding: '10px' } },
+      { id: '2', data: { label: 'Topic Detection Node' }, position: { x: 275, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
+      { id: '3', data: { label: 'MCP: list_enterprise_docs()' }, position: { x: 500, y: 150 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
+      { id: '4', data: { label: 'MCP: read_enterprise_doc()' }, position: { x: 725, y: 150 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
+      { id: '5', data: { label: 'Context-Aware Simplifier' }, position: { x: 950, y: 150 }, style: { background: '#3b0764', color: '#d8b4fe', border: '1px solid #a855f7', borderRadius: '8px' } },
+      { id: '6', type: 'output', data: { label: 'Grounded Communication' }, position: { x: 1175, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
+    ],
+    edges: [
+      { id: 'e1-2', source: '1', target: '2', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e2-3', source: '2', target: '3', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e3-4', source: '3', target: '4', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-5', source: '4', target: '5', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e5-6', source: '5', target: '6', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+    ]
   }
 };
 
