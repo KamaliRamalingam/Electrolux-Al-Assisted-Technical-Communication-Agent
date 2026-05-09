@@ -1,501 +1,96 @@
-# Cline-Hack: Slack AI Simplifier Assistant
+# 🌟 Electrolux Enterprise AI Communication Hub
 
-A robust, Python-based AI assistant designed to simplify technical jargon and communication for various audiences. This project leverages the **Model Context Protocol (MCP)** and **LangGraph** to provide a modular, high-performance reasoning engine that integrates seamlessly with Slack.
+An advanced, agentic AI platform designed to automatically bridge the communication gap between highly technical engineering workflows (GitHub, Jira) and non-technical business stakeholders (Management, Marketing, Frontline Workers).
 
-## 🚀 Overview
-
-Cline-Hack automates the process of translating complex technical text into audience-appropriate content. Whether you're communicating with Management, Engineering, or General stakeholders, this assistant ensures your message is clear, concise, and technically accurate.
-
-### Key Features
-- **LangGraph Reasoning:** Advanced autonomous reasoning loop for processing and refining text.
-- **MCP Architecture:** Decoupled tools and brain using SSE (Server-Sent Events) transport.
-- **Audience-Aware Simplification:** Tailors tone and detail based on the target persona.
-- **Accuracy Validation:** Cross-checks simplified text against the original source to ensure no loss of meaning.
-- **Slack Integration:** Real-time processing via Slack Slash commands and interactions.
+By leveraging **LangGraph** for autonomous reasoning and the **Model Context Protocol (MCP)** for secure, decoupled tool execution, this platform transforms cryptic system logs, pull requests, and incident reports into clear, actionable, and audience-tailored business updates.
 
 ---
 
-## 🏗️ Architecture
+## 🎯 Why This Project is Important
 
-The project is split into two primary components:
+In large enterprises, miscommunication between engineering and business units leads to friction, delayed decision-making, and wasted time. Engineers spend hours manually translating technical jargon into executive summaries, while managers struggle to understand the business impact of a `SIGSEGV in kubelet` or a `feat: implement async context adapter`.
 
-1.  **Python MCP Server (`python-mcp-server`)**:
-    - Exposes core simplification and validation tools.
-    - Operates as a standalone service via SSE.
-    - Handles external API calls (e.g., OpenRouter/Gemini).
-
-2.  **Python AI Agent (`python-ai-agent`)**:
-    - The "Brain" of the operation using LangGraph.
-    - Connects to the MCP server to execute tools.
-    - Manages Slack interactions and request lifecycle.
+**This platform solves this by:**
+1. **Automating Translation:** Instantly turning code pushes and Jira tickets into plain-English updates.
+2. **Enterprise Grounding:** Dynamically reading internal enterprise documentation to ensure AI outputs are factually aligned with internal project names and architectures.
+3. **Saving Time & Money:** Eliminating the manual overhead of incident reporting and release notes.
+4. **Improving Transparency:** Keeping all stakeholders informed in real-time via Slack/Teams without overwhelming them with jargon.
 
 ---
 
-## 🛠️ Setup Instructions
+## ⚙️ How Everything Works
 
-### Prerequisites
-- Python 3.10+
-- A Slack App with Slash Commands enabled.
-- OpenRouter API Key.
+The platform operates on a reactive, event-driven orchestration pipeline:
 
-### 1. Configure the MCP Server
-
-```bash
-cd python-mcp-server
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env and add your OPENROUTER_API_KEY
-```
-
-### 2. Configure the AI Agent
-
-```bash
-cd python-ai-agent
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env and add your SLACK_SIGNING_SECRET and OPENROUTER_API_KEY
-```
+1. **Trigger:** A developer pushes code to GitHub, a Jira ticket is created, or a user submits text via the Dashboard.
+2. **Orchestration (LangGraph):** The core AI Agent receives the payload and begins its autonomous reasoning loop.
+3. **Context Gathering (MCP):** The agent securely delegates tasks to the MCP Server. It pulls the latest GitHub commits, associated pull requests, referenced issues, and searches the `enterprise-documentation` folder for relevant architectural context.
+4. **Simplification & Validation:** The AI simplifies the technical text. It then triggers an internal validation loop to ensure the "core business impact" wasn't lost during the translation. If it failed, the agent corrects itself.
+5. **Distribution:** The polished, audience-aware message is automatically published to designated Slack channels.
 
 ---
 
-## 🏃 Running the Application
+## 📂 Codebase Breakdown & File Structure
 
-You need to run both services simultaneously.
+The repository is modularized into three main components: the AI Agent (Brain), the MCP Server (Tools), and the Dashboard (UI).
 
-### Start MCP Server
+### 1. The AI Agent (`/python-ai-agent`)
+The "Brain" of the operation. It manages the stateful orchestration of the AI workflow.
+* **`agent.py`:** The core FastAPI server. It defines the LangGraph ReAct agent, exposes the webhook endpoints (`/github/webhook`, `/jira/webhook`, `/simplify`), and manages the connection to the MCP server. It handles the routing of incoming events and dispatches the final outputs to Slack.
+* **`app.db`:** An SQLite database storing analytics, message history, and templates.
+
+### 2. The MCP Server (`/python-mcp-server`)
+The "Hands" of the operation. A decoupled Python process exposing enterprise tools via Server-Sent Events (SSE) using the Model Context Protocol.
+* **`server.py`:** Defines and registers all the discrete tools the agent can use.
+  * **GitHub Tools:** `get_github_repo`, `get_github_commit_detail`, `get_github_pull_request`, etc.
+  * **Enterprise Context Tools:** `list_enterprise_docs`, `read_enterprise_doc`.
+  * **AI Processing Tools:** `detect_audience`, `simplify_text`, `validate_accuracy`.
+
+### 3. The Enterprise Frontend (`/frontend`)
+A modern React application providing a rich administrative interface for the platform.
+* **`src/components/PipelineExplorerPage.jsx`:** A visual, interactive node-based architecture diagram (using React Flow) showing the live execution pathways of the agent (e.g., Master Flow, GitHub Webhook Flow).
+* **`src/components/Pages.jsx`:** Houses the Analytics and History dashboards, displaying KPIs like "Technical Hours Saved" and a log of all AI-generated communications.
+* **`src/App.jsx` & `Sidebar.jsx`:** Defines the routing and layout for the enterprise SaaS-style dashboard.
+
+### 4. Enterprise Documentation (`/enterprise-documentation`)
+* A directory containing Markdown files (e.g., IoT Platforms, OTA pipelines). The MCP server searches and reads these files to ground the AI's knowledge in real company context, preventing hallucinations.
+
+---
+
+## 🚀 Running the Application Locally
+
+You need to run all three services simultaneously.
+
+### 1. Start the MCP Server
+This exposes the tools to the AI Agent on port `4000`.
 ```bash
 cd python-mcp-server
 source venv/bin/activate
 python server.py
 ```
-*Default port: `4000`*
 
-### Start AI Agent
+### 2. Start the LangGraph AI Agent
+This runs the orchestrator and webhook listener on port `3000`.
 ```bash
 cd python-ai-agent
 source venv/bin/activate
 python agent.py
 ```
-*Default port: `3000`*
 
----
-
-## 💬 Slack Configuration
-
-1.  **Slash Command:** Create `/simplify`.
-2.  **Request URL:** Point to your agent's endpoint (e.g., `https://<your-ngrok-url>/slack/simplify`).
-3.  **Verification:** Ensure `SLACK_SIGNING_SECRET` in `python-ai-agent/.env` matches your Slack App's secret.
-
----
-
-## 🔗 GitHub Integration
-
-The platform now supports automated GitHub push monitoring. When a developer pushes code to a connected repository, the system intercepts the webhook payload, extracts the commit SHA, branch ref, and pusher metadata, then orchestrates a multi-step MCP tool chain to enrich the event with contextual data — including repository description, decoded README content, commit diff summary, linked pull request title and body, and any referenced issue threads. The enriched payload is passed to a LangGraph ReAct agent which autonomously reasons over the data and produces a concise, jargon-free natural language summary that is published directly to the configured Slack `#updates` channel via an incoming webhook.
-
-### How it works internally
-
-1. **Webhook ingestion** — `POST /github/webhook` receives the push event, verifies the `X-Hub-Signature-256` HMAC header using `GITHUB_WEBHOOK_SECRET`, and dispatches processing as a FastAPI background task to immediately return HTTP 200 and avoid GitHub's 10-second timeout.
-2. **MCP tool orchestration** — The agent calls the following tools in parallel via the SSE-connected MCP server:
-   - `get_github_repo` → repository metadata (language, topics, star count)
-   - `get_github_readme` → base64-decoded README snippet
-   - `get_github_commit_detail` → commit message, author, changed files
-   - `get_github_open_issues` → active issue titles for ambient context
-3. **Contextual enrichment** — If the pushed branch has an associated open PR, the agent additionally calls `find_github_pull_request_for_branch`, `get_github_pull_request`, and `get_github_pr_files`. If commit messages reference issue numbers (e.g. `Fixes #42`), `get_github_issue` and `get_github_issue_comments` are invoked to surface the original problem statement and team discussion.
-4. **AI simplification** — The composed context is sent to Gemini 2.5 Pro via OpenRouter with a strict system prompt constraining output to 2–3 non-technical sentences focused on business impact.
-5. **Slack delivery** — The simplified message is posted to `SLACK_UPDATES_WEBHOOK_URL` using Block Kit formatting.
-
-### Configuration
-
-Add to `python-ai-agent/.env`:
-```
-GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
-GITHUB_WEBHOOK_SECRET=your_secret
+### 3. Start the Frontend Dashboard
+This serves the React UI on port `5173`.
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-Add to `python-mcp-server/.env`:
-```
-GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
-```
+*(Note: To receive live GitHub or Jira webhooks locally, use `ngrok http 3000` and configure the webhook URLs in your GitHub/Jira developer settings).*
 
 ---
 
-## 📄 License
-
-MIT
-
----
-
-## 📝 AI Communication Assistant — Consolidated Implementation Change List
-
-### 1. Application Shell & Layout
-#### 1.1 Add Enterprise Sidebar Navigation
-Implement permanent left navigation panel with:
-* Create Message
-* My Messages
-* Templates
-* Approvals
-* History
-* Analytics
-* Settings
-
-#### 1.2 Convert Modal Layout → Full Application Layout
-Change from centered narrow wizard to:
-* responsive full-width dashboard layout
-* max width: 1280–1440px
-* proper page gutters and spacing
-
-#### 1.3 Improve Responsive Grid Structure
-Adopt:
-* 3-column layout for desktop
-* stacked layout for tablet/mobile
-Suggested:
-[Input Panel] [AI Output] [Publishing Panel]
-
----
-
-### 2. Visual Design & UX Improvements
-#### 2.1 Typography System
-Implement consistent hierarchy:
-* Page title
-* Section titles
-* Labels
-* Body text
-* Caption/helper text
-Recommended:
-* Inter / Segoe UI / SF Pro
-
-#### 2.2 Increase Whitespace & Padding
-Improve:
-* card padding
-* vertical spacing
-* section separation
-* line heights
-
-#### 2.3 Refine Card Design
-Replace heavy borders with:
-* subtle borders
-* soft shadows
-* elevated cards
-
-#### 2.4 Improve Stepper Component
-Enhance:
-* connector lines
-* active states
-* completed checkmarks
-* animations
-* spacing
-
-#### 2.5 Rich Semantic Message Sections
-Convert AI output into visually distinct cards:
-* What’s Happening
-* What This Means
-* Action Required
-* Need Help
-* Timeline
-* Risks / Impact
-Add icons and colored indicators.
-
-#### 2.6 Enhanced Success Screen
-Add:
-* publication summary
-* channel badge
-* timestamp
-* “View Message”
-* “Send Another”
-* “Duplicate Message”
-Optional:
-* success animation/confetti
-
----
-
-### 3. Message Authoring Features
-#### 3.1 Target Audience Support
-Add audience selector:
-* All Employees
-* Frontline Workers
-* IT Teams
-* Factory Staff
-* Executives
-* Pilot Users
-* Regional Teams
-AI should adapt tone/content based on audience.
-
-#### 3.2 Multi-Language Support
-Implement language selector:
-* English
-* Swedish
-* German (future)
-* French (future)
-AI output should generate localized business messages.
-
-#### 3.3 Message Character Limits
-Add:
-* live character counter
-* channel-specific limits
-* warning/error states
-Optional AI actions:
-* Shorten Message
-* Summarize
-* Reduce Length
-
-#### 3.4 Tone Selection
-Add tone options:
-* Professional
-* Friendly
-* Executive
-* Urgent
-* Simplified
-* Technical-lite
-
-#### 3.5 Editable AI Output
-Allow:
-* inline editing
-* regenerate section
-* regenerate full message
-* undo/restore original
-
----
-
-### 4. AI Features & Intelligence
-#### 4.1 RAG (Retrieval Augmented Generation)
-Integrate enterprise knowledge sources:
-* communication templates
-* security policies
-* HR policies
-* approved terminology
-* previous announcements
-* style guides
-
-#### 4.2 AI Governance & Data Masking
-Implement sensitive data detection and masking.
-Detect:
-* server names
-* employee IDs
-* credentials
-* IP addresses
-* emails
-* confidential project names
-Display:
-✓ Sensitive information masked
-✓ Policy compliant
-
-#### 4.3 AI Confidence Indicators
-Add:
-* confidence %
-* AI-generated badge
-* compliance badge
-* readability score
-
-#### 4.4 AI Explainability
-Show transformation insights:
-* technical terms simplified
-* data masked
-* reading level adjusted
-* message shortened
-
-#### 4.5 AI Output Caching
-Cache transformations using:
-message + audience + language + tone
-Benefits:
-* lower latency
-* lower AI cost
-* consistent outputs
-
----
-
-### 5. Publishing Workflow
-#### 5.1 Channel Selection UI
-Improve publishing options with branded cards/icons:
-* Microsoft Teams
-* Slack
-* Viva Engage
-* Email (future)
-
-#### 5.2 Destination Selection
-Allow selecting:
-* Teams channel
-* Slack channel
-* Viva community
-* Distribution group
-
-#### 5.3 Message Preview
-Render accurate previews for:
-* Teams
-* Slack
-* Viva Engage
-Should resemble actual published appearance.
-
-#### 5.4 Scheduling Support
-Add:
-* publish now
-* scheduled publishing
-* timezone support
-
-#### 5.5 Back & Navigation Controls
-Improve navigation:
-* Back
-* Edit
-* Save Draft
-* Cancel
-* Regenerate
-
----
-
-### 6. Integration Layer
-#### 6.1 Microsoft Teams Integration
-Implement:
-* Microsoft Graph API
-* Teams authentication
-* channel discovery
-* posting capability
-
-#### 6.2 Slack Integration
-Implement:
-* Slack OAuth
-* workspace selection
-* channel publishing
-
-#### 6.3 Viva Engage Integration
-Implement publishing support for:
-* communities
-* announcements
-
----
-
-### 7. Enterprise Workflow Features
-#### 7.1 Approval Workflow
-Implement:
-Draft → Review → Approve → Publish
-Roles:
-* Author
-* Reviewer
-* Approver
-* Publisher
-
-#### 7.2 Templates System
-Add reusable templates:
-* Security update
-* Maintenance notice
-* HR communication
-* Incident response
-* Office closure
-
-#### 7.3 Message History
-Store:
-* previous messages
-* publication logs
-* drafts
-* regenerated versions
-
-#### 7.4 Analytics Dashboard
-Track:
-* delivery status
-* engagement
-* read rate
-* acknowledgements
-* reactions
-
-#### 7.5 Audit Logging
-Track:
-* who generated message
-* edits made
-* approval actions
-* publication timestamps
-
----
-
-### 8. Performance & Technical Improvements
-#### 8.1 Skeleton Loading States
-Add loading placeholders during:
-* AI transformation
-* publishing
-* channel loading
-
-#### 8.2 Animation & Microinteractions
-Add:
-* smooth transitions
-* hover states
-* button feedback
-* step transitions
-
-#### 8.3 Error Handling
-Implement graceful handling for:
-* AI failures
-* publishing failures
-* integration issues
-* API timeout
-
-#### 8.4 Save Draft Functionality
-Persist unfinished messages.
-
----
-
-### 9. Security & Compliance
-#### 9.1 Authentication & Authorization
-Support:
-* SSO
-* Microsoft Entra ID
-* RBAC permissions
-
-#### 9.2 Compliance Controls
-Add:
-* data retention policy
-* audit trail
-* export logs
-* governance checks
-
----
-
-### 10. Recommended Implementation Priority
-**Phase 1 — UI Foundation**
-1. Sidebar
-2. Full-width layout
-3. Typography improvements
-4. Rich cards
-5. Message preview
-6. Better stepper
-
-**Phase 2 — Core Product Features**
-1. Audience support
-2. Language support
-3. Character limit
-4. Tone selection
-5. Edit/regenerate flow
-6. Destination selection
-
-**Phase 3 — Enterprise AI**
-1. RAG
-2. Governance/data masking
-3. Confidence indicators
-4. AI explainability
-
-**Phase 4 — Integrations & Workflow**
-1. Teams integration
-2. Slack integration
-3. Approval workflow
-4. Templates
-5. History
-6. Analytics
-
-**Phase 5 — Enterprise Maturity**
-1. Audit logs
-2. Security/RBAC
-3. Compliance controls
-4. Performance optimization
-5. AI caching
+## 🔐 Environment Variables Needed
+- `OPENROUTER_API_KEY`: For Gemini/LLM access.
+- `GITHUB_PERSONAL_ACCESS_TOKEN`: For the MCP server to read private repositories.
+- `GITHUB_WEBHOOK_SECRET`: For the AI agent to verify incoming push events.
+- `SLACK_UPDATES_WEBHOOK_URL`: For publishing outputs to Slack.
