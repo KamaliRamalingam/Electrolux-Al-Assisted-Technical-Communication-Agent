@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { PenSquare, MessageSquare, FileJson, CheckSquare, Clock, BarChart3, Settings } from 'lucide-react';
+import { PenSquare, MessageSquare, FileJson, CheckSquare, Clock, BarChart3, Settings, Network } from 'lucide-react';
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
+    { icon: Network, label: 'MCP Pipelines' },
     { icon: PenSquare, label: 'Create Message' },
     { icon: MessageSquare, label: 'My Messages' },
     { icon: FileJson, label: 'Templates' },

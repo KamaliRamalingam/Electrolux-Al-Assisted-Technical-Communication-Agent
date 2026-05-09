@@ -203,6 +203,25 @@ tools = [detect_audience, simplify_text, validate_accuracy,
          get_github_repo, get_github_readme, get_github_commits, get_github_commit_detail,
          get_github_pull_request, get_github_pr_files, get_github_issue, get_github_issue_comments,
          get_github_open_issues, find_github_pull_request_for_branch]
+=======
+@tool
+async def list_enterprise_docs() -> str:
+    """List all available enterprise project documentation files to find relevant context."""
+    print(f"[Tool Executing] list_enterprise_docs")
+    await init_mcp()
+    result = await mcp_session.call_tool("list_enterprise_docs", arguments={})
+    return result.content[0].text
+
+@tool
+async def read_enterprise_doc(filename: str) -> str:
+    """Read a specific enterprise documentation file to extract project-specific context."""
+    print(f"[Tool Executing] read_enterprise_doc")
+    await init_mcp()
+    result = await mcp_session.call_tool("read_enterprise_doc", arguments={"filename": filename})
+    return result.content[0].text
+
+tools = [detect_audience, simplify_text, validate_accuracy, list_enterprise_docs, read_enterprise_doc]
+main
 
 # Build the LangGraph ReAct Agent
 llm = ChatOpenAI(
@@ -219,10 +238,13 @@ async def run_mcp_pipeline(text: str, audience: str = "management", language: st
     system_prompt = (
         f"You are an autonomous AI Agent responsible for converting technical text into business communication. "
         f"Target Audience: {audience}. Language: {language}. Tone: {tone}. "
-        "You MUST use the provided tools to detect audience, simplify the text, and then validate it. "
-        "If validation fails, retry the simplification with stricter facts AT MOST ONCE. "
-        "If it fails validation a second time, immediately return the best simplified text you have without looping further. "
-        "Once valid (or after 1 retry), return the final simplified text."
+        "ORCHESTRATION RULES:\n"
+        "1. Start by listing enterprise documentation (list_enterprise_docs) to see if this relates to an existing project.\n"
+        "2. If a relevant document is found, read it (read_enterprise_doc) to extract specific business and operational context.\n"
+        "3. Use this context to make the simplification 'grounded' in the enterprise ecosystem.\n"
+        "4. Use detect_audience, simplify_text, and validate_accuracy as part of the loop.\n"
+        "5. If validation fails, retry ONCE with stricter technical facts.\n"
+        "6. In your final response, use the format: 'CONTEXT_USED: [doc1, doc2]\\n\\n[Simplified Text]'"
     )
     
     # Invoke the ReAct graph
@@ -233,11 +255,29 @@ async def run_mcp_pipeline(text: str, audience: str = "management", language: st
         ]
     })
     
-    final_message = result["messages"][-1].content
+    raw_output = result["messages"][-1].content
+    docs_used = []
+    final_output = raw_output
+
+    if "CONTEXT_USED:" in raw_output:
+        parts = raw_output.split("\n\n", 1)
+        header = parts[0]
+        if len(parts) > 1:
+            final_output = parts[1]
+        
+        # Extract docs from header like CONTEXT_USED: [doc1.md, doc2.md]
+        try:
+            doc_str = header.split("CONTEXT_USED:")[1].strip()
+            if doc_str.startswith("[") and doc_str.endswith("]"):
+                docs_used = [d.strip() for d in doc_str[1:-1].split(",") if d.strip()]
+        except:
+            pass
+
     return {
-        "final_output": final_message,
+        "final_output": final_output,
         "audience": audience,
-        "validation_passed": True
+        "validation_passed": True,
+        "docs_used": docs_used
     }
 
 async def process_and_respond(text: str, response_url: str):

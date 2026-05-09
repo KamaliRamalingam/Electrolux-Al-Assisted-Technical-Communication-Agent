@@ -115,6 +115,22 @@ export default function OutputSection({ result, isProcessing }) {
           </div>
         </div>
       </div>
+
+      {result.docs_used && result.docs_used.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-slate-800">
+          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+            Enterprise Context Used
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {result.docs_used.map((doc, idx) => (
+              <span key={idx} className="px-2.5 py-1 bg-brand-500/10 border border-brand-500/20 rounded-lg text-xs font-medium text-brand-300">
+                ✓ {doc}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

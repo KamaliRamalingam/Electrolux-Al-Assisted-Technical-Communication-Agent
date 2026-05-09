@@ -16,6 +16,27 @@ client = OpenAI(
     base_url="https://openrouter.ai/api/v1"
 )
 
+DOC_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), "enterprise-documentation")
+
+@mcp.tool()
+def list_enterprise_docs() -> str:
+    """List all available enterprise project documentation files."""
+    if not os.path.exists(DOC_FOLDER):
+        return "Error: enterprise-documentation folder not found."
+    files = os.listdir(DOC_FOLDER)
+    return "\n".join(files)
+
+@mcp.tool()
+def read_enterprise_doc(filename: str) -> str:
+    """Read the content of a specific enterprise documentation file."""
+    # Security: ensure we stay within the folder
+    base_name = os.path.basename(filename)
+    path = os.path.join(DOC_FOLDER, base_name)
+    if not os.path.exists(path):
+        return f"Error: File {base_name} not found."
+    with open(path, "r") as f:
+        return f.read()
+
 @mcp.tool()
 def detect_audience(text: str) -> str:
     """Detect the appropriate audience for a given technical text."""
