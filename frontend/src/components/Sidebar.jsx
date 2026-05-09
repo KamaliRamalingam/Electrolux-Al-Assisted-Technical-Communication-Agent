@@ -3,13 +3,12 @@ import { PenSquare, MessageSquare, FileJson, CheckSquare, Clock, BarChart3, Sett
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
-    { icon: Network, label: 'MCP Pipelines' },
+    { icon: BarChart3, label: 'Dashboard' },
     { icon: PenSquare, label: 'Create Message' },
-    { icon: MessageSquare, label: 'My Messages' },
+    { icon: Clock, label: 'History' },
     { icon: FileJson, label: 'Templates' },
     { icon: CheckSquare, label: 'Approvals' },
-    { icon: Clock, label: 'History' },
-    { icon: BarChart3, label: 'Analytics' },
+    { icon: Network, label: 'MCP Pipelines' },
     { icon: Settings, label: 'Settings' },
   ];
 

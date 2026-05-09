@@ -9,7 +9,7 @@ import PipelineExplorerPage from './components/PipelineExplorerPage';
 import { simplifyText } from './services/api';
 
 function App() {
-  const [activePage, setActivePage] = useState('Create Message');
+  const [activePage, setActivePage] = useState('Dashboard');
   const [text, setText] = useState('');
   const [audience, setAudience] = useState('All Employees');
   const [language, setLanguage] = useState('English');
@@ -52,6 +52,7 @@ function App() {
         <div className="relative z-10 px-8 py-10 max-w-[1440px] mx-auto">
           <Header />
           
+          {activePage === 'Dashboard' && <AnalyticsPage />}
           {activePage === 'MCP Pipelines' && <PipelineExplorerPage />}
           {activePage === 'Create Message' && (
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start mt-8">
@@ -83,12 +84,10 @@ function App() {
             </div>
           )}
           
-          {activePage === 'My Messages' && <MessagesPage />}
+          {activePage === 'History' && <MessagesPage />}
           {activePage === 'Templates' && <TemplatesPage />}
           {activePage === 'Approvals' && <ApprovalsPage />}
-          {activePage === 'Analytics' && <AnalyticsPage />}
           {activePage === 'Settings' && <SettingsPage />}
-          {activePage === 'History' && <MessagesPage />}
         </div>
       </div>
     </div>
