@@ -6,25 +6,25 @@ import { Network, Server, Webhook, ShieldCheck, Activity, BrainCircuit, Box } fr
 
 const pipelines = {
   main: {
-    name: 'End-to-End Enterprise Flow',
-    description: 'The core lifecycle from Jira/Slack trigger, through the LangGraph AI Agent and MCP Tools, returning to Slack.',
+    name: 'Master Orchestration Flow',
+    description: 'The complete enterprise lifecycle: technical input triggers the LangGraph agent, which orchestrates document retrieval, simplification, and validation before publishing.',
     nodes: [
-      { id: '1', type: 'input', data: { label: 'Jira / Slack Webhook' }, position: { x: 50, y: 150 }, style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #475569', borderRadius: '8px', padding: '10px' } },
+      { id: '1', type: 'input', data: { label: 'Technical Input' }, position: { x: 50, y: 150 }, style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #475569', borderRadius: '8px', padding: '10px' } },
       { id: '2', data: { label: 'FastAPI Backend' }, position: { x: 250, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
-      { id: '3', data: { label: 'LangGraph AI Agent' }, position: { x: 450, y: 150 }, style: { background: '#3b0764', color: '#d8b4fe', border: '1px solid #a855f7', borderRadius: '8px' } },
-      { id: '4', data: { label: 'MCP Server (SSE)' }, position: { x: 450, y: 300 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
-      { id: '5', data: { label: 'Tool: Audience Detect' }, position: { x: 200, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
-      { id: '6', data: { label: 'Tool: Simplify' }, position: { x: 450, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
-      { id: '7', data: { label: 'Tool: Validate' }, position: { x: 700, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
-      { id: '8', type: 'output', data: { label: 'Slack Notification' }, position: { x: 750, y: 150 }, style: { background: '#1e293b', color: '#f8fafc', border: '1px solid #475569', borderRadius: '8px' } },
+      { id: '3', data: { label: 'LangGraph Agent (Brain)' }, position: { x: 475, y: 150 }, style: { background: '#3b0764', color: '#d8b4fe', border: '1px solid #a855f7', borderRadius: '8px' } },
+      { id: '4', data: { label: 'MCP Server (Tools)' }, position: { x: 475, y: 300 }, style: { background: '#064e3b', color: '#6ee7b7', border: '1px solid #059669', borderRadius: '8px' } },
+      { id: '5', data: { label: 'Doc Search / Read' }, position: { x: 225, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '6', data: { label: 'Simplify Tool' }, position: { x: 475, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '7', data: { label: 'Validate Tool' }, position: { x: 725, y: 450 }, style: { background: '#1e293b', color: '#cbd5e1', border: '1px solid #334155', borderRadius: '8px' } },
+      { id: '8', type: 'output', data: { label: 'Enterprise Hub / Slack' }, position: { x: 800, y: 150 }, style: { background: '#0f172a', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: '8px' } },
     ],
     edges: [
       { id: 'e1-2', source: '1', target: '2', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e2-3', source: '2', target: '3', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e3-4', source: '3', target: '4', animated: true, style: { stroke: '#a855f7' }, markerEnd: { type: MarkerType.ArrowClosed } },
-      { id: 'e4-5', source: '4', target: '5', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
-      { id: 'e4-6', source: '4', target: '6', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
-      { id: 'e4-7', source: '4', target: '7', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-5', source: '4', target: '5', animated: true, label: 'Retrieve Context', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-6', source: '4', target: '6', animated: true, label: 'Process', markerEnd: { type: MarkerType.ArrowClosed } },
+      { id: 'e4-7', source: '4', target: '7', animated: true, label: 'Validate', markerEnd: { type: MarkerType.ArrowClosed } },
       { id: 'e3-8', source: '3', target: '8', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
     ]
   },
