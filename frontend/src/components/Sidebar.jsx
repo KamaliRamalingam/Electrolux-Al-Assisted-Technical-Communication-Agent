@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { PenSquare, MessageSquare, FileJson, CheckSquare, Clock, BarChart3, Settings } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
-    { icon: PenSquare, label: 'Create Message', active: true },
+    { icon: PenSquare, label: 'Create Message' },
     { icon: MessageSquare, label: 'My Messages' },
     { icon: FileJson, label: 'Templates' },
     { icon: CheckSquare, label: 'Approvals' },
@@ -27,8 +27,9 @@ export default function Sidebar() {
           return (
             <button
               key={index}
+              onClick={() => setActivePage(item.label)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                item.active 
+                activePage === item.label 
                   ? 'bg-brand-500/10 text-brand-400' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
               }`}

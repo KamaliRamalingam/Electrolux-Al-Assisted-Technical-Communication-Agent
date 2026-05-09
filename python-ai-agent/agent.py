@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager, AsyncExitStack
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+import sqlite3
+from datetime import datetime
 
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
@@ -46,6 +48,49 @@ async def lifespan(app: FastAPI):
     await init_mcp()
     yield
     await exit_stack.aclose()
+
+def init_db():
+    conn = sqlite3.connect("app.db")
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        original_text TEXT,
+                        simplified_text TEXT,
+                        audience TEXT,
+                        status TEXT,
+                        created_at TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS templates (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT,
+                        content TEXT,
+                        category TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS analytics (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        messages_generated INTEGER,
+                        messages_published INTEGER)''')
+    
+    # Pre-populate templates
+    cursor.execute("SELECT COUNT(*) FROM templates")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO templates (title, content, category) VALUES (?, ?, ?)",
+                       ("System Outage", "We are experiencing a system outage. Engineers are investigating. ETA for resolution is 2 hours.", "IT Incident"))
+        cursor.execute("INSERT INTO templates (title, content, category) VALUES (?, ?, ?)",
+                       ("Quarterly Update", "Our quarterly earnings have exceeded expectations by 15%. Great job team!", "Management"))
+    
+    # Pre-populate analytics
+    cursor.execute("SELECT COUNT(*) FROM analytics")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO analytics (messages_generated, messages_published) VALUES (0, 0)")
+        
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def get_db():
+    conn = sqlite3.connect("app.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
 app = FastAPI(lifespan=lifespan)
 
@@ -177,13 +222,74 @@ def send_to_slack_updates(message: str):
 @app.post("/simplify")
 async def simplify_endpoint(req: SimplifyRequest):
     result = await run_mcp_pipeline(req.text, req.audience, req.language, req.tone)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO messages (original_text, simplified_text, audience, status, created_at) VALUES (?, ?, ?, ?, ?)",
+                   (req.text, result['final_output'], req.audience, 'Draft', datetime.now().isoformat()))
+    cursor.execute("UPDATE analytics SET messages_generated = messages_generated + 1")
+    conn.commit()
+    conn.close()
     return result
 
 @app.post("/slack/publish")
 async def publish_endpoint(req: PublishRequest):
     """Frontend-triggered: publish simplified message to the #updates Slack channel."""
     send_to_slack_updates(req.message)
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE analytics SET messages_published = messages_published + 1")
+    conn.commit()
+    conn.close()
     return {"status": "ok"}
+
+@app.get("/messages")
+async def get_messages():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM messages ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.get("/templates")
+async def get_templates():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM templates")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.get("/approvals")
+async def get_approvals():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM messages WHERE status='Pending Approval' ORDER BY id DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.post("/approvals/{msg_id}/approve")
+async def approve_message(msg_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE messages SET status='Approved' WHERE id=?", (msg_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+@app.get("/analytics")
+async def get_analytics():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM analytics LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else {"messages_generated": 0, "messages_published": 0}
+
+@app.get("/settings")
+async def get_settings():
+    return {"theme": "dark", "notifications": True}
 
 @app.post("/slack/simplify")
 async def slack_endpoint(req: Request, background_tasks: BackgroundTasks):
