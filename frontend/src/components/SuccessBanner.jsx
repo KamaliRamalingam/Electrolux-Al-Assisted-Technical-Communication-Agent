@@ -33,7 +33,7 @@ export default function SuccessBanner({ channel, audience, publishedAt, onReset 
 
   return (
     <div className="success-banner">
-      <div className="success-icon">🎉</div>
+      <div className="success-icon"></div>
 
       <h2>Message Published Successfully!</h2>
 
@@ -58,7 +58,7 @@ export default function SuccessBanner({ channel, audience, publishedAt, onReset 
         type="button"
         style={{ marginTop: 'var(--space-4)' }}
       >
-        ✨ Send Another Message
+         Send Another Message
       </button>
     </div>
   );

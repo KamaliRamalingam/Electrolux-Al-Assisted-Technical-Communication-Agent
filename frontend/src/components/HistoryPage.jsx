@@ -43,8 +43,8 @@ const CHANNEL_ICON = {
   'Viva Engage':     '💜',
   'Microsoft Teams': '🟦',
   'Slack':           '🟥',
-  'Email':           '📧',
-  'SMS':             '💬',
+  'Email':           '',
+  'SMS':             '',
 };
 
 const CHANNEL_CLASS = {
@@ -83,7 +83,7 @@ function csvEscape(val) {
 function SearchToolbar({ value, onChange }) {
   return (
     <div className="history-search-wrap">
-      <span className="history-search-icon">🔍</span>
+      <span className="history-search-icon"></span>
       <input
         className="history-search-input"
         type="text"
@@ -210,10 +210,10 @@ function ActionMenu({ comm, onView, onEdit, onDuplicate, onRepublish, onExportPD
 
   const actions = [
     { label: '👁️  View',       fn: () => { onView(comm);       setOpen(false); } },
-    { label: '✏️  Edit',       fn: () => { onEdit(comm);       setOpen(false); } },
-    { label: '📋  Duplicate',  fn: () => { onDuplicate(comm);  setOpen(false); } },
-    { label: '🚀  Republish',  fn: () => { onRepublish(comm);  setOpen(false); } },
-    { label: '📄  Export PDF', fn: () => { onExportPDF(comm);  setOpen(false); } },
+    { label: '  Edit',       fn: () => { onEdit(comm);       setOpen(false); } },
+    { label: '  Duplicate',  fn: () => { onDuplicate(comm);  setOpen(false); } },
+    { label: '  Republish',  fn: () => { onRepublish(comm);  setOpen(false); } },
+    { label: '  Export PDF', fn: () => { onExportPDF(comm);  setOpen(false); } },
     { label: '🗑️  Delete',     fn: () => { onDelete(comm.id);  setOpen(false); }, danger: true },
   ];
 
@@ -529,10 +529,10 @@ export default function HistoryPage({
             onClick={() => exportCSV(filtered)}
             title="Export current filtered list as CSV"
           >
-            📥 Export CSV
+             Export CSV
           </button>
           <button className="btn btn-primary" onClick={onNewCommunication}>
-            ✨ New Communication
+             New Communication
           </button>
         </div>
       </div>
@@ -558,18 +558,18 @@ export default function HistoryPage({
       {/* Empty state */}
       {communications.length === 0 ? (
         <div className="history-empty">
-          <span className="history-empty-icon">📋</span>
+          <span className="history-empty-icon"></span>
           <h2 className="history-empty-title">No history yet</h2>
           <p className="history-empty-text">
             Once you create and publish communications they'll appear here for review, re-use, and export.
           </p>
           <button className="btn btn-primary" onClick={onNewCommunication}>
-            ✨ Create Your First Communication
+             Create Your First Communication
           </button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="history-empty">
-          <span className="history-empty-icon">🔍</span>
+          <span className="history-empty-icon"></span>
           <h2 className="history-empty-title">No results match your filters</h2>
           <p className="history-empty-text">Try adjusting your search or clearing the filters.</p>
           <button className="btn btn-secondary" onClick={() => { setSearch(''); setFilters({ audience: '', channel: '', status: '', dateFrom: '', dateTo: '' }); }}>
@@ -640,7 +640,7 @@ export default function HistoryPage({
                     <td>
                       {comm.confidence ? (
                         <span className={`confidence-badge ${confidenceClass(comm.confidence)}`}>
-                          🤖 {comm.confidence}%
+                           {comm.confidence}%
                         </span>
                       ) : '—'}
                     </td>

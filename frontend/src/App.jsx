@@ -1,14 +1,18 @@
 import { useState, useRef } from 'react';
 import './App.css';
+import './screens.css';
 
 import Sidebar            from './components/Sidebar';
 import StepIndicator      from './components/StepIndicator';
 import Step1_InputForm    from './components/Step1_InputForm';
 import Step2_ReviewPanel  from './components/Step2_ReviewPanel';
 import Step3_PublishPanel from './components/Step3_PublishPanel';
-import PlaceholderView    from './components/PlaceholderView';
 import DashboardPage      from './components/DashboardPage';
 import HistoryPage        from './components/HistoryPage';
+import TemplatesPage      from './components/TemplatesPage';
+import SettingsPage       from './components/SettingsPage';
+import AnalyticsPage      from './components/AnalyticsPage';
+import AuditLogsPage      from './components/AuditLogsPage';
 
 import { transformMessage, publishMessage, publishToTeams } from './services/api';
 
@@ -62,6 +66,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen,      setSidebarOpen]      = useState(false); // mobile
   const [activeNavItem,    setActiveNavItem]     = useState('dashboard');
+  const [userRole,         setUserRole]          = useState('admin'); // 'admin' | 'user'
 
   // 'dashboard' | 'wizard' | 'history' | 'templates' | 'settings' | 'analytics' | 'audit-logs'
   const [activeView, setActiveView] = useState('dashboard');
@@ -311,6 +316,38 @@ export default function App() {
     setCommunications(prev => prev.filter(c => c.id !== id));
   }
 
+  /* ── Per-section regeneration ── */
+  async function handleRegenerateSection(sectionKey) {
+    setError(null);
+    try {
+      const result = await transformMessage(rawMessage, audience, channel, tone, language);
+      if (result.success) {
+        // Only update the specific section key
+        setTransformedMessage(prev => ({
+          ...prev,
+          [sectionKey]: result.transformedMessage?.[sectionKey] ?? prev?.[sectionKey],
+        }));
+        // Update the comm entry's single section
+        const audienceLabel = AUDIENCE_LABELS[audience] || audience;
+        setCommunications(prev => prev.map(c => {
+          if (c.id !== currentCommId.current) return c;
+          const updatedTM = {
+            ...c.transformedMessage,
+            [sectionKey]: result.transformedMessage?.[sectionKey] ?? c.transformedMessage?.[sectionKey],
+          };
+          return {
+            ...c,
+            transformedMessage: updatedTM,
+            aiSummary: buildAiSummary(updatedTM, audienceLabel, channel),
+            updated: new Date().toISOString(),
+          };
+        }));
+      }
+    } catch {
+      setError('Could not reach the backend. Is it running on http://localhost:3001?');
+    }
+  }
+
   /* ── History: Restore previous version ── */
   function handleHistoryRestore(id, versionSnapshot) {
     setCommunications(prev => prev.map(c => {
@@ -347,6 +384,29 @@ export default function App() {
     }
   }
 
+  /* ── Save Draft (Step 3) ── */
+  function handleSaveDraft() {
+    // Mark current comm as Draft (already Draft by default, just surface the flash)
+    setCommunications(prev => prev.map(c =>
+      c.id === currentCommId.current
+        ? { ...c, status: 'Draft', updated: new Date().toISOString() }
+        : c
+    ));
+  }
+
+  /* ── Templates: use template → pre-fill Step 1 raw message ── */
+  function handleUseTemplate(filledText) {
+    setCurrentStep(1);
+    setRawMessage(filledText);
+    setTransformedMessage(null);
+    setPublishStatus(null);
+    setPublishResult(null);
+    setError(null);
+    currentCommId.current = null;
+    setActiveNavItem('new');
+    setActiveView('wizard');
+  }
+
   // ── Layout classes ────────────────────────────────────────────────
   const shellClasses = [
     'layout-shell',
@@ -357,9 +417,13 @@ export default function App() {
   // Show the stepper only when the wizard is active and not yet success
   const showStepper = activeView === 'wizard' && publishStatus !== 'success';
   // Full-bleed views — no topbar step badge, no card wrapper
-  const isDashboard = activeView === 'dashboard';
-  const isHistory   = activeView === 'history';
-  const isFullBleed = isDashboard || isHistory;
+  const isDashboard  = activeView === 'dashboard';
+  const isHistory    = activeView === 'history';
+  const isTemplates  = activeView === 'templates';
+  const isSettings   = activeView === 'settings';
+  const isAnalytics  = activeView === 'analytics';
+  const isAuditLogs  = activeView === 'audit-logs';
+  const isFullBleed  = isDashboard || isHistory || isTemplates || isSettings || isAnalytics || isAuditLogs;
 
   // ── Render ────────────────────────────────────────────────────────
   return (
@@ -370,6 +434,7 @@ export default function App() {
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(c => !c)}
         activeItem={activeNavItem}
+        userRole={userRole}
         onItemClick={key => {
           setActiveNavItem(key);
           setSidebarOpen(false); // close mobile drawer on selection
@@ -423,17 +488,51 @@ export default function App() {
             >
               ☰
             </button>
-            <span className="topbar-heading">🤖 AI Communication Agent</span>
+            <span className="topbar-heading">
+              {activeView === 'dashboard' && 'Dashboard'}
+              {activeView === 'wizard' && 'New Communication'}
+              {activeView === 'history' && 'History'}
+              {activeView === 'templates' && 'Templates'}
+              {activeView === 'settings' && 'Settings'}
+              {activeView === 'analytics' && 'Analytics'}
+              {activeView === 'audit-logs' && 'Audit Logs'}
+            </span>
           </div>
-          {!isFullBleed && (
-            <div className="topbar-right">
-              {showStepper && (
-                <span className="step-badge">
-                  Step {currentStep} of 3 — {STEP_LABELS[currentStep]}
-                </span>
-              )}
+          <div className="topbar-right">
+            {!isFullBleed && showStepper && (
+              <span className="step-badge">
+                Step {currentStep} of 3 — {STEP_LABELS[currentStep]}
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '16px', paddingLeft: '16px', borderLeft: '1px solid var(--border-color)' }}>
+              <select 
+                value={userRole} 
+                onChange={(e) => {
+                  setUserRole(e.target.value);
+                  if (e.target.value === 'user' && ['settings', 'analytics', 'audit-logs'].includes(activeView)) {
+                    setActiveView('dashboard');
+                    setActiveNavItem('dashboard');
+                  }
+                }}
+                style={{ 
+                  background: 'var(--bg-card)', 
+                  color: 'var(--text-primary)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '4px', 
+                  padding: '4px 8px', 
+                  fontSize: '12px',
+                  height: 'auto'
+                }}
+              >
+                <option value="admin">Admin View</option>
+                <option value="user">User View</option>
+              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }}></div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>System Online</span>
+              </div>
             </div>
-          )}
+          </div>
         </header>
 
         {/* Step progress bar — wizard only */}
@@ -471,13 +570,40 @@ export default function App() {
           />
         )}
 
-        {/* ── All other views — constrained card layout ── */}
-        {!isFullBleed && (
+        {/* ── Templates — full-width ── */}
+        {isTemplates && (
+          <div className="fullbleed-page-wrap">
+            <TemplatesPage onUseTemplate={handleUseTemplate} />
+          </div>
+        )}
+
+        {/* ── Settings — full-width ── */}
+        {isSettings && (
+          <div className="fullbleed-page-wrap">
+            <SettingsPage />
+          </div>
+        )}
+
+        {/* ── Analytics — full-width ── */}
+        {isAnalytics && (
+          <div className="fullbleed-page-wrap">
+            <AnalyticsPage communications={communications} />
+          </div>
+        )}
+
+        {/* ── Audit Logs — full-width ── */}
+        {isAuditLogs && (
+          <div className="fullbleed-page-wrap">
+            <AuditLogsPage communications={communications} />
+          </div>
+        )}
+
+        {/* ── Wizard (Steps 1-3) — constrained card layout ── */}
+        {activeView === 'wizard' && (
           <main className="main-body">
             <div className="content-card">
 
-              {/* Wizard steps */}
-              {activeView === 'wizard' && currentStep === 1 && (
+              {currentStep === 1 && (
                 <Step1_InputForm
                   rawMessage={rawMessage}
                   audience={audience}
@@ -495,19 +621,25 @@ export default function App() {
                 />
               )}
 
-              {activeView === 'wizard' && currentStep === 2 && transformedMessage && (
+              {currentStep === 2 && transformedMessage && (
                 <Step2_ReviewPanel
                   transformedMessage={transformedMessage}
                   audience={audience}
+                  tone={tone}
+                  language={language}
                   isLoading={isLoading}
                   error={error}
                   onMessageChange={setTransformedMessage}
                   onRegenerate={handleRegenerate}
                   onApprove={handleApprove}
+                  onRegenerateSection={handleRegenerateSection}
+                  confidence={
+                    communications.find(c => c.id === currentCommId.current)?.confidence ?? 92
+                  }
                 />
               )}
 
-              {activeView === 'wizard' && currentStep === 3 && transformedMessage && (
+              {currentStep === 3 && transformedMessage && (
                 <Step3_PublishPanel
                   transformedMessage={transformedMessage}
                   audience={audience}
@@ -519,59 +651,7 @@ export default function App() {
                   onPublish={handlePublish}
                   onBack={() => { setError(null); setCurrentStep(2); }}
                   onReset={handleReset}
-                />
-              )}
-
-              {/* Placeholder pages */}
-              {activeView === 'templates' && (
-                <PlaceholderView
-                  icon="📄"
-                  title="Message Templates"
-                  teaser="Save, share, and reuse approved message blueprints across your team."
-                  extras={[
-                    { icon: '⭐', text: '3 saved templates ready to use' },
-                    { icon: '🏷️', text: 'Tag templates by audience or campaign' },
-                    { icon: '🤝', text: 'Share templates with colleagues' },
-                  ]}
-                />
-              )}
-
-              {activeView === 'settings' && (
-                <PlaceholderView
-                  icon="⚙️"
-                  title="Settings"
-                  teaser="Configure your AI preferences, webhook integrations, and notification rules."
-                  extras={[
-                    { icon: '🔑', text: 'Manage API keys and integrations' },
-                    { icon: '🌐', text: 'Default language and tone preferences' },
-                    { icon: '🔔', text: 'Notification and approval workflows' },
-                  ]}
-                />
-              )}
-
-              {activeView === 'analytics' && (
-                <PlaceholderView
-                  icon="📊"
-                  title="Analytics Dashboard"
-                  teaser="Measure the real-world impact of every AI-assisted communication."
-                  extras={[
-                    { icon: '📈', text: 'Engagement trends across all channels' },
-                    { icon: '🎯', text: 'Audience reach and read-completion rates' },
-                    { icon: '🤖', text: 'AI confidence scores and simplification metrics' },
-                  ]}
-                />
-              )}
-
-              {activeView === 'audit-logs' && (
-                <PlaceholderView
-                  icon="🔒"
-                  title="Audit Logs"
-                  teaser="Full governance trail — every AI action, approval, and publish event."
-                  extras={[
-                    { icon: '📝', text: 'Track all edits, approvals, and rejections' },
-                    { icon: '🔍', text: 'Filter by user, date range, or event type' },
-                    { icon: '📤', text: 'Export compliance reports as PDF or CSV' },
-                  ]}
+                  onSaveDraft={handleSaveDraft}
                 />
               )}
 

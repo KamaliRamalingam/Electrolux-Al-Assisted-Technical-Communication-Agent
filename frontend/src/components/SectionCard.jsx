@@ -4,10 +4,10 @@ import { useState } from 'react';
  * Per-section configuration: accent colour class, icon, label.
  */
 const SECTION_CONFIG = {
-  what_is_happening:     { accent: 'blue',   icon: '📢', label: '📢 What Is Happening'     },
+  what_is_happening:     { accent: 'blue',   icon: '', label: ' What Is Happening'     },
   what_it_means_for_you: { accent: 'purple', icon: '👤', label: '👤 What It Means for You' },
-  what_you_need_to_do:   { accent: 'green',  icon: '✅', label: '✅ What You Need to Do'    },
-  help:                  { accent: 'orange', icon: '💬', label: '💬 Need Help?'             }
+  what_you_need_to_do:   { accent: 'green',  icon: '', label: ' What You Need to Do'    },
+  help:                  { accent: 'orange', icon: '', label: ' Need Help?'             }
 };
 
 /**
@@ -23,7 +23,7 @@ const SECTION_CONFIG = {
 export default function SectionCard({ sectionKey, label, value, editMode, onChange }) {
   const [copied, setCopied] = useState(false);
 
-  const cfg    = SECTION_CONFIG[sectionKey] || { accent: 'blue', icon: '📝', label };
+  const cfg    = SECTION_CONFIG[sectionKey] || { accent: 'blue', icon: '', label };
   const words  = value ? value.trim().split(/\s+/).filter(Boolean).length : 0;
   const warnAt = 60;
 

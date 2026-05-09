@@ -32,8 +32,8 @@ const AUDIENCE_OPTIONS = [
 ];
 
 const CHANNEL_OPTIONS = [
-  { value: 'Viva Engage',     label: '🔥 Viva Engage'     },
-  { value: 'Microsoft Teams', label: '💬 Microsoft Teams' },
+  { value: 'Viva Engage',     label: ' Viva Engage'     },
+  { value: 'Microsoft Teams', label: ' Microsoft Teams' },
   { value: 'Slack',           label: '#  Slack'            },
   { value: 'Email',           label: '✉️  Email'           },
   { value: 'SMS',             label: '📱 SMS'              },
@@ -182,7 +182,7 @@ export default function Step1_InputForm({
         </p>
 
         {/* Error */}
-        {error && <div className="error-box">⚠️ {error}</div>}
+        {error && <div className="error-box"> {error}</div>}
 
         {/* Raw message textarea */}
         <div className="form-group">
@@ -296,7 +296,7 @@ export default function Step1_InputForm({
           {isLoading ? (
             <><span className="spinner" /> Transforming with AI…</>
           ) : (
-            <>✨ Transform with AI →</>
+            <> Transform with AI →</>
           )}
         </button>
 

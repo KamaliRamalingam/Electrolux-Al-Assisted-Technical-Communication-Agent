@@ -7,9 +7,9 @@
  */
 
 const STEPS = [
-  { number: 1, icon: '✏️', label: 'Input Message',  sublabel: 'Paste & configure' },
-  { number: 2, icon: '🔍', label: 'Review Output',  sublabel: 'Edit & approve'    },
-  { number: 3, icon: '🚀', label: 'Publish',         sublabel: 'Select & send'     }
+  { number: 1, icon: '', label: 'Input Message',  sublabel: 'Paste & configure' },
+  { number: 2, icon: '', label: 'Review Output',  sublabel: 'Edit & approve'    },
+  { number: 3, icon: '', label: 'Publish',         sublabel: 'Select & send'     }
 ];
 
 export default function StepIndicator({ currentStep, onStepClick }) {

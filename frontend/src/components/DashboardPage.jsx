@@ -79,8 +79,8 @@ function ChannelBadge({ channel }) {
     'SMS':             'channel-sms',
   };
   const icons = {
-    'Microsoft Teams': '💬',
-    'Viva Engage':     '✨',
+    'Microsoft Teams': '',
+    'Viva Engage':     '',
     'Slack':           '#',
     'Email':           '✉️',
     'SMS':             '📱',
@@ -110,14 +110,14 @@ function ConfidenceBadge({ score }) {
 function EmptyDashboard({ onNewCommunication }) {
   return (
     <div className="dashboard-empty">
-      <div className="dashboard-empty-icon">🤖</div>
+      <div className="dashboard-empty-icon"></div>
       <h2 className="dashboard-empty-title">No communications yet</h2>
       <p className="dashboard-empty-text">
         Create your first AI-assisted communication to see live metrics,
         activity feed, and publishing history appear here.
       </p>
       <button className="btn btn-primary" onClick={onNewCommunication}>
-        ✨ Create First Communication
+         Create First Communication
       </button>
     </div>
   );
@@ -229,10 +229,10 @@ export default function DashboardPage({ communications = [], onNewCommunication 
             </p>
           </div>
           <div className="dashboard-header-right">
-            <button className="btn-icon-ghost" title="Notifications" aria-label="Notifications">🔔</button>
+            <button className="btn-icon-ghost" title="Notifications" aria-label="Notifications"></button>
             <div className="user-avatar" title="User profile">KR</div>
             <button className="btn btn-primary" onClick={onNewCommunication}>
-              ✨ New Communication
+               New Communication
             </button>
           </div>
         </div>
@@ -254,10 +254,10 @@ export default function DashboardPage({ communications = [], onNewCommunication 
           </p>
         </div>
         <div className="dashboard-header-right">
-          <button className="btn-icon-ghost" title="Notifications" aria-label="Notifications">🔔</button>
+          <button className="btn-icon-ghost" title="Notifications" aria-label="Notifications"></button>
           <div className="user-avatar" title="User profile" aria-label="User profile">KR</div>
           <button className="btn btn-primary" onClick={onNewCommunication}>
-            ✨ New Communication
+             New Communication
           </button>
         </div>
       </div>
@@ -265,14 +265,14 @@ export default function DashboardPage({ communications = [], onNewCommunication 
       {/* ── Section 1: KPI Metrics ── */}
       <div className="metrics-grid">
         <MetricCard
-          icon="📨"
+          icon=""
           label="Total Messages"
           value={metrics.total}
           color="blue"
           subtitle="All time"
         />
         <MetricCard
-          icon="✅"
+          icon=""
           label="Published"
           value={metrics.published}
           color="green"
@@ -286,7 +286,7 @@ export default function DashboardPage({ communications = [], onNewCommunication 
           subtitle="Pending publish"
         />
         <MetricCard
-          icon="📝"
+          icon=""
           label="Drafts"
           value={metrics.drafts}
           color="orange"
@@ -303,7 +303,7 @@ export default function DashboardPage({ communications = [], onNewCommunication 
           </div>
           <div className="dashboard-table-toolbar">
             <div className="table-search-wrap">
-              <span className="table-search-icon">🔍</span>
+              <span className="table-search-icon"></span>
               <input
                 type="text"
                 className="table-search-input"
@@ -358,7 +358,7 @@ export default function DashboardPage({ communications = [], onNewCommunication 
               {pagedData.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="table-empty">
-                    <span className="table-empty-icon">🔍</span>
+                    <span className="table-empty-icon"></span>
                     <span>No communications match your filters.</span>
                   </td>
                 </tr>
@@ -526,7 +526,7 @@ export default function DashboardPage({ communications = [], onNewCommunication 
 
           {/* Session summary callout */}
           <div className="ai-impact-callout">
-            <span className="ai-impact-icon">🤖</span>
+            <span className="ai-impact-icon"></span>
             <div>
               <div className="ai-impact-headline">Session summary</div>
               <div className="ai-impact-stat">

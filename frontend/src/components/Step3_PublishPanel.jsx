@@ -3,8 +3,8 @@ import SuccessBanner from './SuccessBanner';
 import { publishToTeams } from '../services/api';
 
 const CHANNELS = [
-  { value: 'Viva Engage',     icon: '🔥', skin: 'viva'  },
-  { value: 'Microsoft Teams', icon: '💬', skin: 'teams' },
+  { value: 'Viva Engage',     icon: '', skin: 'viva'  },
+  { value: 'Microsoft Teams', icon: '', skin: 'teams' },
   { value: 'Slack',           icon: '#',  skin: 'slack' }
 ];
 
@@ -21,10 +21,10 @@ const CHANNEL_SKIN = {
 };
 
 const SECTIONS = [
-  { key: 'what_is_happening',     label: '📢 What Is Happening'     },
+  { key: 'what_is_happening',     label: ' What Is Happening'     },
   { key: 'what_it_means_for_you', label: '👤 What It Means for You' },
-  { key: 'what_you_need_to_do',   label: '✅ What You Need to Do'    },
-  { key: 'help',                  label: '💬 Need Help?'             }
+  { key: 'what_you_need_to_do',   label: ' What You Need to Do'    },
+  { key: 'help',                  label: ' Need Help?'             }
 ];
 
 const CHANNEL_DISPLAY_NAMES = {
@@ -123,8 +123,8 @@ export default function Step3_PublishPanel({
         <div className="preview-toolbar">
           <span>
             {channel === 'Slack'           && '# general · Slack preview'}
-            {channel === 'Microsoft Teams' && '💬 General · Teams preview'}
-            {channel === 'Viva Engage'     && '🔥 Company Feed · Viva Engage preview'}
+            {channel === 'Microsoft Teams' && ' General · Teams preview'}
+            {channel === 'Viva Engage'     && ' Company Feed · Viva Engage preview'}
           </span>
           <button
             type="button"
@@ -148,7 +148,7 @@ export default function Step3_PublishPanel({
         {/* Character count footer */}
         <div className={`preview-char-count ${overLimit ? 'over-limit' : ''}`}>
           {charCount.toLocaleString()} / {charLimit.toLocaleString()} characters
-          {overLimit && ' · ⚠️ Exceeds channel limit'}
+          {overLimit && ' ·  Exceeds channel limit'}
         </div>
       </div>
 
@@ -156,7 +156,7 @@ export default function Step3_PublishPanel({
       {channel === 'Microsoft Teams' && (
         <div style={{ marginTop: 24 }}>
           <p className="section-title">
-            💬 Teams Incoming Webhook URL
+             Teams Incoming Webhook URL
             <span style={{ fontWeight: 400, fontSize: '0.8em', marginLeft: 8, opacity: 0.7 }}>
               — required to post to Teams
             </span>
@@ -205,7 +205,7 @@ export default function Step3_PublishPanel({
       </div>
       <p className="schedule-hint">Leave blank to publish immediately.</p>
 
-      {error && <div className="error-box" style={{ marginTop: 16 }}>⚠️ {error}</div>}
+      {error && <div className="error-box" style={{ marginTop: 16 }}> {error}</div>}
 
       {/* Action buttons */}
       <div className="btn-row" style={{ marginTop: 24 }}>
@@ -227,7 +227,7 @@ export default function Step3_PublishPanel({
           {isLoading ? (
             <><span className="spinner" /> Publishing…</>
           ) : (
-            '🚀 Publish Now'
+            ' Publish Now'
           )}
         </button>
       </div>

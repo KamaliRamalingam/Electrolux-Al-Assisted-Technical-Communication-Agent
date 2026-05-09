@@ -39,10 +39,10 @@ export default function Step2_ReviewPanel({
   return (
     <div className="card-body">
       <div className="review-banner">
-        ✅ Message transformed for: <strong style={{ marginLeft: 4 }}>{audienceLabel}</strong>
+         Message transformed for: <strong style={{ marginLeft: 4 }}>{audienceLabel}</strong>
       </div>
 
-      {error && <div className="error-box">⚠️ {error}</div>}
+      {error && <div className="error-box"> {error}</div>}
 
       {SECTIONS.map(({ key }) => (
         <SectionCard
@@ -60,7 +60,7 @@ export default function Step2_ReviewPanel({
           onClick={() => setEditMode(prev => !prev)}
           type="button"
         >
-          {editMode ? '💾 Save Edits' : '✏️ Edit'}
+          {editMode ? '💾 Save Edits' : ' Edit'}
         </button>
 
         <button
@@ -83,7 +83,7 @@ export default function Step2_ReviewPanel({
           disabled={isLoading}
           type="button"
         >
-          ✅ Approve &amp; Continue →
+           Approve &amp; Continue →
         </button>
       </div>
     </div>
