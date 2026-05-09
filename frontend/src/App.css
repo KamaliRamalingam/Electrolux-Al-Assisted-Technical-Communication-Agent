@@ -409,7 +409,7 @@ body {
 .main-body {
   flex: 1;
   padding: var(--space-8);
-  max-width: 900px;
+  max-width: 1100px;
   width: 100%;
 }
 
@@ -1953,4 +1953,234 @@ textarea {
   .dashboard-table-toolbar { flex-direction: column; align-items: flex-start; }
   .table-search-input { width: 100%; }
   .comms-table th, .comms-table td { padding: var(--space-3) var(--space-3); }
+}
+
+/* ============================================================
+   STEP 1 – NEW COMMUNICATION (two-column layout + tone pills
+   + AI guidance panel + config summary)
+   ============================================================ */
+
+/* ── Two-column layout ── */
+.step1-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.step1-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.step1-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: sticky;
+  top: var(--space-6);
+}
+
+/* ── Card headings inside Step 1 ── */
+.step1-card-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+  margin: 0 0 var(--space-1) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.step1-card-subtitle {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin: 0 0 var(--space-4) 0;
+}
+
+/* ── Tone pill group ── */
+.tone-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.tone-pill {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--gray-300);
+  background: #fff;
+  color: var(--gray-700);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tone-pill:hover {
+  border-color: var(--brand-500);
+  color: var(--brand-600);
+  background: var(--brand-50);
+}
+
+.tone-pill--active {
+  border-color: var(--brand-500);
+  background: var(--brand-500);
+  color: #fff;
+  font-weight: var(--font-semibold);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.20);
+}
+
+.tone-pill--active:hover {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+  color: #fff;
+}
+
+/* ── AI Guidance Panel ── */
+.ai-guidance-panel {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1.5px solid;
+  animation: cardEnter 0.3s ease both;
+}
+
+.ai-guidance--blue {
+  background: var(--accent-blue-bg);
+  border-color: var(--accent-blue-border);
+}
+.ai-guidance--orange {
+  background: var(--accent-orange-bg);
+  border-color: var(--accent-orange-border);
+}
+.ai-guidance--purple {
+  background: var(--accent-purple-bg);
+  border-color: var(--accent-purple-border);
+}
+.ai-guidance--green {
+  background: var(--accent-green-bg);
+  border-color: var(--accent-green-border);
+}
+
+.ai-guidance-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.ai-guidance-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ai-guidance-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.ai-guidance-audience {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  font-weight: var(--font-normal);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ai-guidance-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-guidance-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--gray-700);
+  line-height: var(--leading-relaxed);
+}
+
+.ai-guidance-bullet {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+/* ── Config Summary ── */
+.step1-config-summary {
+  background: var(--gray-50);
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.step1-config-title {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.step1-config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.step1-config-row:last-child {
+  border-bottom: none;
+}
+
+.step1-config-key {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  font-weight: var(--font-medium);
+}
+
+.step1-config-val {
+  font-size: var(--text-xs);
+  color: var(--gray-800);
+  font-weight: var(--font-semibold);
+  text-align: right;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Step 1 responsive ── */
+@media (max-width: 960px) {
+  .step1-layout {
+    grid-template-columns: 1fr;
+  }
+  .step1-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .tone-pill-group {
+    gap: var(--space-1);
+  }
+  .tone-pill {
+    padding: 5px 10px;
+    font-size: var(--text-xs);
+  }
 }

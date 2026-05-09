@@ -77,6 +77,8 @@ export default function App() {
   const [rawMessage, setRawMessage] = useState('');
   const [audience,   setAudience]   = useState('frontline');
   const [channel,    setChannel]    = useState('Viva Engage');
+  const [tone,       setTone]       = useState('Reassuring');
+  const [language,   setLanguage]   = useState('en');
 
   // ── Step 2 state ──────────────────────────────────────────────────
   const [transformedMessage, setTransformedMessage] = useState(null);
@@ -95,7 +97,7 @@ export default function App() {
     setError(null);
     setIsLoading(true);
     try {
-      const result = await transformMessage(rawMessage, audience, channel);
+      const result = await transformMessage(rawMessage, audience, channel, tone, language);
       if (result.success) {
         setTransformedMessage(result.transformedMessage);
         setCurrentStep(2);
@@ -109,6 +111,8 @@ export default function App() {
           title:            deriveTitle(rawMessage),
           audience:         audienceLabel,
           channel,
+          tone,
+          language,
           status:           'Draft',
           updated:          new Date().toISOString(),
           transformedMessage: result.transformedMessage,
@@ -132,7 +136,7 @@ export default function App() {
     setError(null);
     setIsLoading(true);
     try {
-      const result = await transformMessage(rawMessage, audience, channel);
+      const result = await transformMessage(rawMessage, audience, channel, tone, language);
       if (result.success) {
         setTransformedMessage(result.transformedMessage);
 
@@ -347,11 +351,15 @@ export default function App() {
                   rawMessage={rawMessage}
                   audience={audience}
                   channel={channel}
+                  tone={tone}
+                  language={language}
                   isLoading={isLoading}
                   error={error}
                   onMessageChange={setRawMessage}
                   onAudienceChange={setAudience}
                   onChannelChange={setChannel}
+                  onToneChange={setTone}
+                  onLanguageChange={setLanguage}
                   onTransform={handleTransform}
                 />
               )}

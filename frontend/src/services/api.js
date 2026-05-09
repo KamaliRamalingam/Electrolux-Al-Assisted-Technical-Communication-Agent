@@ -10,8 +10,14 @@ const api = axios.create({
  * Transform a raw message into a structured 4-section AI output.
  * @returns {{ success, transformedMessage: { what_is_happening, what_it_means_for_you, what_you_need_to_do, help } }}
  */
-export const transformMessage = async (rawMessage, audience, channel) => {
-  const response = await api.post('/transform', { rawMessage, audience, channel });
+export const transformMessage = async (rawMessage, audience, channel, tone, language) => {
+  const response = await api.post('/transform', {
+    rawMessage,
+    audience,
+    channel,
+    tone:     tone     || 'Reassuring',
+    language: language || 'en',
+  });
   return response.data;
 };
 
