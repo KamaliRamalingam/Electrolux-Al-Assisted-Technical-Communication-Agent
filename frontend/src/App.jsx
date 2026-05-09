@@ -8,6 +8,7 @@ import Step2_ReviewPanel  from './components/Step2_ReviewPanel';
 import Step3_PublishPanel from './components/Step3_PublishPanel';
 import PlaceholderView    from './components/PlaceholderView';
 import DashboardPage      from './components/DashboardPage';
+import HistoryPage        from './components/HistoryPage';
 
 import { transformMessage, publishMessage, publishToTeams } from './services/api';
 
@@ -106,6 +107,12 @@ export default function App() {
         const newId = ++commIdCounter.current;
         currentCommId.current = newId;
         const audienceLabel = AUDIENCE_LABELS[audience] || audience;
+        const initialSnapshot = {
+          version:            1,
+          updatedAt:          new Date().toISOString(),
+          transformedMessage: result.transformedMessage,
+          aiSummary:          buildAiSummary(result.transformedMessage, audienceLabel, channel),
+        };
         const newComm = {
           id:               newId,
           title:            deriveTitle(rawMessage),
@@ -114,6 +121,8 @@ export default function App() {
           tone,
           language,
           status:           'Draft',
+          version:          1,
+          versions:         [initialSnapshot],
           updated:          new Date().toISOString(),
           transformedMessage: result.transformedMessage,
           confidence:       calcConfidence(newId),
@@ -140,18 +149,31 @@ export default function App() {
       if (result.success) {
         setTransformedMessage(result.transformedMessage);
 
-        // ── Update the current Draft with refreshed AI output ──
+        // ── Update the current Draft with refreshed AI output + version bump ──
         const audienceLabel = AUDIENCE_LABELS[audience] || audience;
-        setCommunications(prev => prev.map(c =>
-          c.id === currentCommId.current
-            ? {
-                ...c,
-                transformedMessage: result.transformedMessage,
-                aiSummary: buildAiSummary(result.transformedMessage, audienceLabel, channel),
-                updated: new Date().toISOString(),
-              }
-            : c
-        ));
+        setCommunications(prev => prev.map(c => {
+          if (c.id !== currentCommId.current) return c;
+          const newVersion = (c.version || 1) + 1;
+          const snapshot = {
+            version:            newVersion,
+            updatedAt:          new Date().toISOString(),
+            transformedMessage: result.transformedMessage,
+            aiSummary:          buildAiSummary(result.transformedMessage, audienceLabel, channel),
+          };
+          return {
+            ...c,
+            version:            newVersion,
+            versions:           [...(c.versions || [{
+                version:            c.version || 1,
+                updatedAt:          c.updated,
+                transformedMessage: c.transformedMessage,
+                aiSummary:          c.aiSummary,
+              }]), snapshot],
+            transformedMessage: result.transformedMessage,
+            aiSummary:          buildAiSummary(result.transformedMessage, audienceLabel, channel),
+            updated:            new Date().toISOString(),
+          };
+        }));
       } else {
         setError(result.error || 'Regeneration failed. Please try again.');
       }
@@ -213,6 +235,8 @@ export default function App() {
     setRawMessage('');
     setAudience('frontline');
     setChannel('Viva Engage');
+    setTone('Reassuring');
+    setLanguage('en');
     setTransformedMessage(null);
     setPublishStatus(null);
     setPublishResult(null);
@@ -221,6 +245,95 @@ export default function App() {
     currentCommId.current = null;
     setActiveNavItem('new');
     setActiveView('wizard');
+  }
+
+  /* ── History: Edit — pre-fill Step 1 from an existing comm ── */
+  function handleHistoryEdit(comm) {
+    // find the audience key from label
+    const audienceKey = Object.entries(AUDIENCE_LABELS)
+      .find(([, v]) => v === comm.audience)?.[0] || 'frontline';
+    setCurrentStep(1);
+    setRawMessage('');                    // raw source is not stored, leave blank
+    setAudience(audienceKey);
+    setChannel(comm.channel || 'Viva Engage');
+    setTone(comm.tone || 'Reassuring');
+    setLanguage(comm.language || 'en');
+    setTransformedMessage(null);
+    setPublishStatus(null);
+    setPublishResult(null);
+    setError(null);
+    currentCommId.current = comm.id;     // editing existing entry
+    setActiveNavItem('new');
+    setActiveView('wizard');
+  }
+
+  /* ── History: Duplicate ── */
+  function handleHistoryDuplicate(comm) {
+    const newId = ++commIdCounter.current;
+    const copy = {
+      ...comm,
+      id:          newId,
+      title:       `${comm.title} (Copy)`,
+      status:      'Draft',
+      version:     1,
+      versions:    [{
+        version:            1,
+        updatedAt:          new Date().toISOString(),
+        transformedMessage: comm.transformedMessage,
+        aiSummary:          comm.aiSummary,
+      }],
+      updated:     new Date().toISOString(),
+      publishedAt: null,
+    };
+    setCommunications(prev => [copy, ...prev]);
+  }
+
+  /* ── History: Republish — jump to Step 3 with this comm's content ── */
+  function handleHistoryRepublish(comm) {
+    const audienceKey = Object.entries(AUDIENCE_LABELS)
+      .find(([, v]) => v === comm.audience)?.[0] || 'frontline';
+    setAudience(audienceKey);
+    setChannel(comm.channel || 'Viva Engage');
+    setTone(comm.tone || 'Reassuring');
+    setLanguage(comm.language || 'en');
+    setTransformedMessage(comm.transformedMessage);
+    setPublishStatus(null);
+    setPublishResult(null);
+    setError(null);
+    currentCommId.current = comm.id;
+    setCurrentStep(3);
+    setActiveNavItem('new');
+    setActiveView('wizard');
+  }
+
+  /* ── History: Delete ── */
+  function handleHistoryDelete(id) {
+    setCommunications(prev => prev.filter(c => c.id !== id));
+  }
+
+  /* ── History: Restore previous version ── */
+  function handleHistoryRestore(id, versionSnapshot) {
+    setCommunications(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      // Trim versions array to up to and including the restored version,
+      // then add a new "restored" snapshot
+      const trimmed = (c.versions || []).filter(v => v.version <= versionSnapshot.version);
+      const newVersion = (c.version || 1) + 1;
+      const restoredSnapshot = {
+        version:            newVersion,
+        updatedAt:          new Date().toISOString(),
+        transformedMessage: versionSnapshot.transformedMessage,
+        aiSummary:          versionSnapshot.aiSummary,
+      };
+      return {
+        ...c,
+        version:            newVersion,
+        versions:           [...trimmed, restoredSnapshot],
+        transformedMessage: versionSnapshot.transformedMessage,
+        aiSummary:          versionSnapshot.aiSummary,
+        updated:            new Date().toISOString(),
+      };
+    }));
   }
 
   /**
@@ -243,8 +356,10 @@ export default function App() {
 
   // Show the stepper only when the wizard is active and not yet success
   const showStepper = activeView === 'wizard' && publishStatus !== 'success';
-  // Dashboard is full-bleed — no topbar step badge, no wrapper card
+  // Full-bleed views — no topbar step badge, no card wrapper
   const isDashboard = activeView === 'dashboard';
+  const isHistory   = activeView === 'history';
+  const isFullBleed = isDashboard || isHistory;
 
   // ── Render ────────────────────────────────────────────────────────
   return (
@@ -298,7 +413,7 @@ export default function App() {
       {/* ── Main content ── */}
       <div className="main-content">
 
-        {/* Top bar — hide step badge on dashboard */}
+        {/* Top bar — hide step badge on dashboard/history */}
         <header className="main-topbar">
           <div className="topbar-left">
             <button
@@ -310,7 +425,7 @@ export default function App() {
             </button>
             <span className="topbar-heading">🤖 AI Communication Agent</span>
           </div>
-          {!isDashboard && (
+          {!isFullBleed && (
             <div className="topbar-right">
               {showStepper && (
                 <span className="step-badge">
@@ -340,8 +455,24 @@ export default function App() {
           />
         )}
 
+        {/* ── History — full-width, no card wrapper ── */}
+        {isHistory && (
+          <HistoryPage
+            communications={communications}
+            onEdit={handleHistoryEdit}
+            onDuplicate={handleHistoryDuplicate}
+            onRepublish={handleHistoryRepublish}
+            onDelete={handleHistoryDelete}
+            onRestore={handleHistoryRestore}
+            onNewCommunication={() => {
+              handleReset();
+              setActiveNavItem('new');
+            }}
+          />
+        )}
+
         {/* ── All other views — constrained card layout ── */}
-        {!isDashboard && (
+        {!isFullBleed && (
           <main className="main-body">
             <div className="content-card">
 
@@ -392,19 +523,6 @@ export default function App() {
               )}
 
               {/* Placeholder pages */}
-              {activeView === 'history' && (
-                <PlaceholderView
-                  icon="📋"
-                  title="Communication History"
-                  teaser="Review and resend all previously published messages in one place."
-                  extras={[
-                    { icon: '🔍', text: 'Search & filter by audience, channel, or date' },
-                    { icon: '♻️', text: 'One-click re-publish or edit past messages' },
-                    { icon: '📊', text: 'Engagement metrics per communication' },
-                  ]}
-                />
-              )}
-
               {activeView === 'templates' && (
                 <PlaceholderView
                   icon="📄"
