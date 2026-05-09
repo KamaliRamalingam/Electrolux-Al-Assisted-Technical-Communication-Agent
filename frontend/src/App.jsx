@@ -5,6 +5,7 @@ import OutputSection from './components/OutputSection';
 import PublishSection from './components/PublishSection';
 import Sidebar from './components/Sidebar';
 import { MessagesPage, TemplatesPage, ApprovalsPage, AnalyticsPage, SettingsPage } from './components/Pages';
+import PipelineExplorerPage from './components/PipelineExplorerPage';
 import { simplifyText } from './services/api';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
         <div className="relative z-10 px-8 py-10 max-w-[1440px] mx-auto">
           <Header />
           
+          {activePage === 'MCP Pipelines' && <PipelineExplorerPage />}
           {activePage === 'Create Message' && (
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start mt-8">
               {/* Input Column */}
