@@ -104,6 +104,37 @@ python agent.py
 
 ---
 
+## 🔗 GitHub Integration
+
+The platform now supports automated GitHub push monitoring. When a developer pushes code to a connected repository, the system intercepts the webhook payload, extracts the commit SHA, branch ref, and pusher metadata, then orchestrates a multi-step MCP tool chain to enrich the event with contextual data — including repository description, decoded README content, commit diff summary, linked pull request title and body, and any referenced issue threads. The enriched payload is passed to a LangGraph ReAct agent which autonomously reasons over the data and produces a concise, jargon-free natural language summary that is published directly to the configured Slack `#updates` channel via an incoming webhook.
+
+### How it works internally
+
+1. **Webhook ingestion** — `POST /github/webhook` receives the push event, verifies the `X-Hub-Signature-256` HMAC header using `GITHUB_WEBHOOK_SECRET`, and dispatches processing as a FastAPI background task to immediately return HTTP 200 and avoid GitHub's 10-second timeout.
+2. **MCP tool orchestration** — The agent calls the following tools in parallel via the SSE-connected MCP server:
+   - `get_github_repo` → repository metadata (language, topics, star count)
+   - `get_github_readme` → base64-decoded README snippet
+   - `get_github_commit_detail` → commit message, author, changed files
+   - `get_github_open_issues` → active issue titles for ambient context
+3. **Contextual enrichment** — If the pushed branch has an associated open PR, the agent additionally calls `find_github_pull_request_for_branch`, `get_github_pull_request`, and `get_github_pr_files`. If commit messages reference issue numbers (e.g. `Fixes #42`), `get_github_issue` and `get_github_issue_comments` are invoked to surface the original problem statement and team discussion.
+4. **AI simplification** — The composed context is sent to Gemini 2.5 Pro via OpenRouter with a strict system prompt constraining output to 2–3 non-technical sentences focused on business impact.
+5. **Slack delivery** — The simplified message is posted to `SLACK_UPDATES_WEBHOOK_URL` using Block Kit formatting.
+
+### Configuration
+
+Add to `python-ai-agent/.env`:
+```
+GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
+GITHUB_WEBHOOK_SECRET=your_secret
+```
+
+Add to `python-mcp-server/.env`:
+```
+GITHUB_PERSONAL_ACCESS_TOKEN=ghp_...
+```
+
+---
+
 ## 📄 License
 
 MIT
