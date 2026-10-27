@@ -77,6 +77,35 @@ A modern React application providing a rich administrative interface for the pla
 
 ---
 
+## 🛠️ Setup Instructions
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- An OpenRouter API key, and a GitHub personal access token for the MCP server
+
+### 1. Set up the MCP Server
+```bash
+cd python-mcp-server
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Set up the AI Agent
+```bash
+cd python-ai-agent
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Add your environment variables
+Create a `.env` file in `python-mcp-server` and `python-ai-agent` with the
+variables listed under **Environment Variables Needed** below.
+
+---
+
 ## 🚀 Running the Application Locally
 
 You need to run all three services simultaneously.
