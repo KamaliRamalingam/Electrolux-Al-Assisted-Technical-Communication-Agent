@@ -18,7 +18,7 @@
 
 ---
 
-# 🌟 Electrolux Enterprise AI Communication Hub
+# Electrolux Enterprise AI Communication Hub
 
 An advanced, agentic AI platform designed to automatically bridge the communication gap between highly technical engineering workflows (GitHub, Jira) and non-technical business stakeholders (Management, Marketing, Frontline Workers).
 
