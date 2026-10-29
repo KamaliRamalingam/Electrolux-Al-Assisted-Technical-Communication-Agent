@@ -1,20 +1,20 @@
-> **Cline AI-Assisted Enterprise Coding Hackathon · May 2026 · Team of five**
->
-> Built during a 48-hour hackathon on an Electrolux challenge: turning technical
-> engineering updates into clear, audience-specific messages for non-technical teams.
-> Developed with AI-assisted coding using [Cline](https://cline.bot).
->
-> **My contribution:** the dashboard UI and Teams integration, built on separate
-> feature branches. See
-> [`1.5-History-Integration`](https://github.com/KamaliRamalingam/electrolux-ai-technical-communication-agent/tree/1.5-History-Integration)
-> for my latest work:
-> - Phase 1 UI and Node.js backend / MCP server setup
-> - Microsoft Teams integration
-> - Dashboard, History and "New Communication" screens
-> - Enterprise UI redesign: Analytics, Audit Logs, Settings and Templates pages
->
-> The files in `enterprise-documentation/` are **fictional sample documents** created
-> to demonstrate the documentation-search tool. They are not Electrolux material.
+**Cline AI-Assisted Enterprise Coding Hackathon · May 2026 · Team of five**
+
+Built during a 48-hour hackathon on an Electrolux challenge: turning technical
+engineering updates into clear, audience-specific messages for non-technical teams.
+Developed with AI-assisted coding using [Cline](https://cline.bot).
+
+**My contribution:** the dashboard UI and Teams integration, built on separate
+feature branches. See
+[`1.5-History-Integration`](https://github.com/KamaliRamalingam/electrolux-ai-technical-communication-agent/tree/1.5-History-Integration)
+for my latest work:
+- Phase 1 UI and Node.js backend / MCP server setup
+- Microsoft Teams integration
+- Dashboard, History and "New Communication" screens
+- Enterprise UI redesign: Analytics, Audit Logs, Settings and Templates pages
+
+The files in `enterprise-documentation/` are **fictional sample documents** created
+to demonstrate the documentation-search tool. They are not Electrolux material.
 
 ---
 
